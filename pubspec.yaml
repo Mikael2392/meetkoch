@@ -26,7 +26,7 @@ dev_dependencies:
   flutter_launcher_icons: "^0.13.1"
 
 flutter_icons:
-  image_path: "assets/icons/MeetKoch Icons.png"
+  image_path: "assets/icons/MeetKoch _icons.png"
   android: true
   ios: true
   
