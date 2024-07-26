@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD:lib/src/features/features1/presentation/screen 1/screen_1_login.dart
 import 'package:meetkoch/src/core/presentation/app_home.dart';
 import 'package:meetkoch/src/features/features2/presentation/screen2/screen_2_registrieren.dart';
-=======
-import 'package:meetkoch/src/features/screen2/screen_2_registrieren.dart';
->>>>>>> master:lib/src/features/screen 1/screen_1_login.dart
 
 class MeetKochApp extends StatelessWidget {
   const MeetKochApp({super.key});
