@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:meetkoch/src/features/features4/presentation/screen4/home_screen.dart';
+import 'package:meetkoch/src/features/features5/presentation/setting_screen.dart';
+import 'package:meetkoch/src/features/features6/presentation/pp_screen.dart';
+import 'package:meetkoch/src/features/features7/presentation/auftrag_screen.dart';
 
 class AppHome extends StatefulWidget {
   const AppHome({super.key});
@@ -11,8 +15,10 @@ class _AppHomeState extends State<AppHome> {
   int currentIndex = 0;
 
   final List<Widget> screens = [
-    const Placeholder(),
-    const Placeholder(),
+    const HomeScreen(),
+    const SettingScreen(),
+    const PPScreen(),
+    const AuftragScreen(),
   ];
   @override
   Widget build(BuildContext context) {
@@ -22,7 +28,7 @@ class _AppHomeState extends State<AppHome> {
           'MyGallery',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Color.fromRGBO(100, 27, 27, 0.965),
+        backgroundColor: const Color(0xFF4B2F3E),
       ),
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
@@ -30,13 +36,14 @@ class _AppHomeState extends State<AppHome> {
             currentIndex = index;
           });
         },
-        indicatorColor: const Color.fromRGBO(100, 27, 0, 30),
+        indicatorColor: Color.fromARGB(255, 121, 76, 100),
         selectedIndex: currentIndex,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.image), label: 'Bilder'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Über mich'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Über mich'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'Über mich'),
+          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.settings), label: 'Setting'),
+          NavigationDestination(icon: Icon(Icons.person), label: 'pppp'),
+          NavigationDestination(
+              icon: Icon(Icons.ad_units_outlined), label: 'auftrag'),
         ],
       ),
       body: Center(
