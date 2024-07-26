@@ -6,8 +6,6 @@ class RegistrationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(
-          255, 177, 111, 146), // Hintergrundfarbe  gesamten Screens
       appBar: AppBar(
         title: const Text(
           'Registrieren',
@@ -18,8 +16,17 @@ class RegistrationScreen extends StatelessWidget {
         iconTheme:
             const IconThemeData(color: Colors.black), // Farbe der AppBar Icons
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF4B2F3E),
+              Color(0xFFB16F92),
+            ],
+          ),
+        ),
         child: ListView(
           children: [
             _buildSectionTitle('Stammdaten'),
@@ -50,7 +57,7 @@ class RegistrationScreen extends StatelessWidget {
               ),
               child: const Text(
                 'Registrieren',
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
               ),
             ),
           ],
@@ -65,7 +72,7 @@ class RegistrationScreen extends StatelessWidget {
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.brown,
+        color: Color.fromARGB(255, 152, 173, 161),
       ),
     );
   }
