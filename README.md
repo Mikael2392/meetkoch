@@ -1,3 +1,3 @@
-# meetkoch
+# MeetKoch
 
 A new Flutter project.
