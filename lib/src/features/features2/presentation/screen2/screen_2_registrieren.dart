@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui'; // Für BackdropFilter
 
 class RegistrationScreen extends StatelessWidget {
   const RegistrationScreen({super.key});
@@ -10,7 +11,7 @@ class RegistrationScreen extends StatelessWidget {
         title: const Text(
           'Registrieren',
           style: TextStyle(
-              color: Color.fromARGB(255, 245, 189, 222)), // Textfarbe AppBar
+              color: Color.fromARGB(255, 167, 188, 168)), // Textfarbe AppBar
         ),
         backgroundColor: const Color(0xFF4B2F3E), // Hintergrundfarbe der AppBar
         iconTheme:
@@ -28,39 +29,79 @@ class RegistrationScreen extends StatelessWidget {
           ),
         ),
         child: ListView(
+          padding: const EdgeInsets.all(16.0),
           children: [
-            _buildSectionTitle('Stammdaten'),
-            _buildTextField('Firma'),
-            _buildTextField('Vorname Geschäftsführer'),
-            _buildTextField('Nachname Geschäftsführer'),
-            _buildTextField('Strasse + Nr'),
-            _buildTextField('PLZ'),
-            _buildTextField('Deutschland'),
-            _buildTextField('UST. Id Nr. / St. Nr.'),
-            _buildTextField('Telefon'),
-            SizedBox(height: 20),
-            _buildSectionTitle('Zugangsdaten'),
-            _buildTextField('E-Mail'),
-            _buildTextField('Passwort', isPassword: true),
-            _buildTextField('Passwort wiederholen', isPassword: true),
-            SizedBox(height: 20),
-            _buildSectionTitle('Registrierung abschliessen'),
-            _buildSwitchTile('AGB'),
-            _buildSwitchTile('Datenschutz'),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                // Handle registration logic
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 203, 173, 89),
+            _buildBlurryContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Stammdaten'),
+                  _buildTextField('Firma'),
+                  _buildTextField('Vorname Geschäftsführer'),
+                  _buildTextField('Nachname Geschäftsführer'),
+                  _buildTextField('Strasse + Nr'),
+                  _buildTextField('PLZ'),
+                  _buildTextField('Deutschland'),
+                  _buildTextField('UST. Id Nr. / St. Nr.'),
+                  _buildTextField('Telefon'),
+                ],
               ),
-              child: const Text(
-                'Registrieren',
-                style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+            ),
+            SizedBox(height: 20),
+            _buildBlurryContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Zugangsdaten'),
+                  _buildTextField('E-Mail'),
+                  _buildTextField('Passwort', isPassword: true),
+                  _buildTextField('Passwort wiederholen', isPassword: true),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            _buildBlurryContainer(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Registrierung abschliessen'),
+                  _buildSwitchTile('AGB'),
+                  _buildSwitchTile('Datenschutz'),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Handle registration logic
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color.fromARGB(255, 203, 173, 89),
+                    ),
+                    child: const Text(
+                      'Registrieren',
+                      style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBlurryContainer({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32.0),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Color.fromARGB(255, 210, 212, 201)
+                .withOpacity(0.7), // Opazität des Containers
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          child: child,
         ),
       ),
     );
@@ -72,7 +113,7 @@ class RegistrationScreen extends StatelessWidget {
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Color.fromARGB(255, 152, 173, 161),
+        color: Color.fromARGB(255, 41, 50, 45),
       ),
     );
   }
