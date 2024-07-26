@@ -6,9 +6,17 @@ class RegistrationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color.fromARGB(
+          255, 177, 111, 146), // Hintergrundfarbe  gesamten Screens
       appBar: AppBar(
-        title: const Text('Aufträge'),
-        backgroundColor: Colors.grey[300],
+        title: const Text(
+          'Registrieren',
+          style: TextStyle(
+              color: Color.fromARGB(255, 245, 189, 222)), // Textfarbe AppBar
+        ),
+        backgroundColor: const Color(0xFF4B2F3E), // Hintergrundfarbe der AppBar
+        iconTheme:
+            const IconThemeData(color: Colors.black), // Farbe der AppBar Icons
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -38,10 +46,12 @@ class RegistrationScreen extends StatelessWidget {
                 // Handle registration logic
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[300],
+                backgroundColor: Color.fromARGB(255, 203, 173, 89),
               ),
-              child: const Text('Registrieren',
-                  style: TextStyle(color: Colors.black)),
+              child: const Text(
+                'Registrieren',
+                style: TextStyle(color: Colors.black),
+              ),
             ),
           ],
         ),
@@ -53,7 +63,10 @@ class RegistrationScreen extends StatelessWidget {
     return Text(
       title,
       style: const TextStyle(
-          fontSize: 20, fontWeight: FontWeight.bold, color: Colors.brown),
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.brown,
+      ),
     );
   }
 
