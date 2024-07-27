@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meetkoch/src/features/features3/presentation/screen3/auftrag_liste.dart';
 
 class AuftragScreen extends StatelessWidget {
   const AuftragScreen({super.key});
@@ -18,6 +19,7 @@ class AuftragScreen extends StatelessWidget {
               ],
             ),
           ),
+          child: const AuftraegeListe(),
         ),
       ),
     );
