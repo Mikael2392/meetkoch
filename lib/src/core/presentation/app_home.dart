@@ -25,7 +25,7 @@ class _AppHomeState extends State<AppHome> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'MyGallery',
+          'Home',
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF4B2F3E),
