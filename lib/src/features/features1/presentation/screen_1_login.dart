@@ -132,14 +132,10 @@ class _MeetKochHomeState extends State<MeetKochHome> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFDAB9),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            minimumSize: const Size(250, 50),
-                            textStyle: const TextStyle(fontSize: 20),
-                            elevation: 5,
+                            backgroundColor:
+                                const Color.fromARGB(255, 188, 180, 133),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 100.0, vertical: 12.0),
                           ),
                           child: const Text(
                             'Log in',
@@ -158,14 +154,10 @@ class _MeetKochHomeState extends State<MeetKochHome> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[400],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            minimumSize: const Size(300, 50),
-                            textStyle: const TextStyle(fontSize: 18),
-                            elevation: 5,
+                            backgroundColor:
+                                const Color.fromARGB(255, 188, 180, 133),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 100.0, vertical: 12.0),
                           ),
                           child: const Text(
                             'Registrieren',
