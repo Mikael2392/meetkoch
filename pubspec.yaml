@@ -12,7 +12,7 @@ dependencies:
   flutter_native_splash: ^2.4.1
 
 flutter_native_splash:
-  color: "#42a5f5"
+  color: "#4B2F3E"
   branding: assets/icons/MeetKoch (1).png
   branding_mode: bottom
   android: true
