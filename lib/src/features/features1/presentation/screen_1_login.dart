@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meetkoch/src/core/presentation/app_home.dart';
-import 'package:meetkoch/src/features/features2/presentation/screen2/screen_2_registrieren.dart';
+import 'package:meetkoch/src/features/features2/presentation/screen_2_registrieren.dart';
 
 class MeetKochApp extends StatelessWidget {
   const MeetKochApp({super.key});
