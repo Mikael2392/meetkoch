@@ -76,7 +76,7 @@ class RegistrationScreen1 extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: const Color(0xFFD2D4C8),
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(60.0),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -84,9 +84,9 @@ class RegistrationScreen1 extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 41, 50, 45),
+              color: Color.fromARGB(255, 102, 45, 64),
             ),
             textAlign: TextAlign.center,
           ),
@@ -100,9 +100,9 @@ class RegistrationScreen1 extends StatelessWidget {
           ElevatedButton(
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(255, 209, 203, 164),
+              backgroundColor: Color.fromARGB(255, 188, 180, 133),
               padding:
-                  const EdgeInsets.symmetric(horizontal: 40.0, vertical: 12.0),
+                  const EdgeInsets.symmetric(horizontal: 100.0, vertical: 12.0),
             ),
             child: const Text(
               'Registrieren',

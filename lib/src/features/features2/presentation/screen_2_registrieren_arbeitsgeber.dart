@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui'; // Für BackdropFilter
 
 class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
   const Screen2RegistrierenArbeitsgeber({super.key});
@@ -31,7 +30,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            _buildBlurryContainer(
+            _buildNormalContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -48,7 +47,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            _buildBlurryContainer(
+            _buildNormalContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -60,7 +59,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
               ),
             ),
             SizedBox(height: 20),
-            _buildBlurryContainer(
+            _buildNormalContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -89,21 +88,14 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
     );
   }
 
-  Widget _buildBlurryContainer({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32.0),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-        child: Container(
-          padding: const EdgeInsets.all(16.0),
-          decoration: BoxDecoration(
-            color: Color.fromARGB(255, 210, 212, 201)
-                .withOpacity(0.7), // Opazität des Containers
-            borderRadius: BorderRadius.circular(12.0),
-          ),
-          child: child,
-        ),
+  Widget _buildNormalContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD2D4C8), // Hintergrundfarbe des Containers
+        borderRadius: BorderRadius.circular(40.0), // Abrundung des Containers
       ),
+      child: child,
     );
   }
 
