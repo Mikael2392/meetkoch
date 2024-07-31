@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui'; // Für BackdropFilter
 
-class RegistrationScreenFreiberufler extends StatelessWidget {
-  const RegistrationScreenFreiberufler({super.key});
+class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
+  const Screen2RegistrierenArbeitsgeber({super.key});
 
   @override
   Widget build(BuildContext context) {
