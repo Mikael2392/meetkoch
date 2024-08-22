@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:meetkoch/src/features/features3/presentation/auftrag_liste.dart';
 import 'package:meetkoch/src/features/features4/presentation/home_screen.dart';
 import 'package:meetkoch/src/features/features5/presentation/setting_screen.dart';
-import 'package:meetkoch/src/features/features6/presentation/pp_screen.dart';
 
 class AppHome extends StatefulWidget {
   const AppHome({super.key});
@@ -17,7 +16,6 @@ class _AppHomeState extends State<AppHome> {
   final List<Widget> screens = [
     const HomeScreen(),
     const SettingScreen(),
-    const PPScreen(),
     const AuftraegeListe(),
   ];
   @override
@@ -41,7 +39,6 @@ class _AppHomeState extends State<AppHome> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.settings), label: 'Setting'),
-          NavigationDestination(icon: Icon(Icons.person), label: 'pppp'),
           NavigationDestination(
               icon: Icon(Icons.ad_units_outlined), label: 'Mein Aufträger'),
         ],

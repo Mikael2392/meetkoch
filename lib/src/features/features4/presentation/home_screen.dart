@@ -55,7 +55,6 @@ class HomeScreen extends StatelessWidget {
                   builder: (context) => DetailScreen(
                     title: auftraege[index]["name"] as String,
                     description: auftraege[index]["description"] as String,
-                    image: auftraege[index]["image"] as String,
                   ),
                 ),
               );
