@@ -25,9 +25,9 @@ class AuftraegeListe extends StatelessWidget {
       body: ListView.separated(
         itemCount: auftraege.length,
         separatorBuilder: (context, index) => Divider(
-          color: Colors.grey[300], // Farbe des Trennstrichs
-          thickness: 1, // Dicke des Trennstrichs
-          height: 1, // Höhe des Trennstrichs
+          color: Colors.grey[300],
+          thickness: 1,
+          height: 1,
         ),
         itemBuilder: (context, index) {
           return ListTile(
