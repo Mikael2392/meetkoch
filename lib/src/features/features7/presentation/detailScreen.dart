@@ -67,7 +67,7 @@ class DetailScreen extends StatelessWidget {
                     ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4B2F3E),
+                        backgroundColor: Color.fromARGB(255, 188, 180, 133),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 15),
                         textStyle: const TextStyle(
