@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/features7/presentation/detailScreen.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class AuftraegeListe extends StatelessWidget {
+  const AuftraegeListe({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,15 +47,10 @@ class HomeScreen extends StatelessWidget {
             trailing: const Icon(Icons.arrow_forward_ios),
             isThreeLine: true,
             onTap: () {
-              // Hier navigieren wir zu einem neuen Screen
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => DetailScreen(
-                    title: auftraege[index]["name"] as String,
-                    description: auftraege[index]["description"] as String,
-                    image: auftraege[index]["image"] as String,
-                  ),
+                  builder: (context) => Placeholder(),
                 ),
               );
             },
