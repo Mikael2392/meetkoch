@@ -18,10 +18,17 @@ class AuftraegeListe extends StatelessWidget {
         "description": "Wir Brauchen Ab 01.05 noch 1 Koch ..",
         "image": "assets/martha_craig.png"
       },
-      // Weitere Einträge ...
+      // Weitere Einträge
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Mein Aufträger',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF4B2F3E),
+      ),
       body: ListView.separated(
         itemCount: auftraege.length,
         separatorBuilder: (context, index) => Divider(

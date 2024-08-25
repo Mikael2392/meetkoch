@@ -23,6 +23,13 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Home',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF4B2F3E),
+      ),
       body: ListView.separated(
         itemCount: auftraege.length,
         separatorBuilder: (context, index) => Divider(
@@ -51,10 +58,7 @@ class HomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => DetailScreen(
-                    title: auftraege[index]["name"] as String,
-                    description: auftraege[index]["description"] as String,
-                  ),
+                  builder: (context) => DetailScreen(),
                 ),
               );
             },
