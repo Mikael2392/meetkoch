@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/features7/presentation/detailScreen.dart';
+import 'package:meetkoch/src/features/Detail/presentation/detailScreen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

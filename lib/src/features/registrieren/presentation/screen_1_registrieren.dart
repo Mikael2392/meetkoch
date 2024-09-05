@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/features2/presentation/screen_2_registrieren.dart';
-import 'package:meetkoch/src/features/features2/presentation/screen_2_registrieren_arbeitsgeber.dart';
+import 'package:meetkoch/src/features/registrieren/presentation/screen_2_registrieren.dart';
+import 'package:meetkoch/src/features/registrieren/presentation/screen_2_registrieren_arbeitsgeber.dart';
 
 class RegistrationScreen1 extends StatelessWidget {
   const RegistrationScreen1({super.key});

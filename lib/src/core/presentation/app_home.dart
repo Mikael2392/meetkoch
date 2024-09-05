@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/features3/presentation/auftrag_liste.dart';
-import 'package:meetkoch/src/features/features4/presentation/home_screen.dart';
-import 'package:meetkoch/src/features/features5/presentation/setting_screen.dart';
+import 'package:meetkoch/src/features/auftrag_liste/presentation/auftrag_liste.dart';
+import 'package:meetkoch/src/features/Home/presentation/home_screen.dart';
+import 'package:meetkoch/src/features/Setting/presentation/setting_screen.dart';
 
 class AppHome extends StatefulWidget {
   const AppHome({super.key});
