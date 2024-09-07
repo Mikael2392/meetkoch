@@ -29,6 +29,7 @@ class AuftraegeListe extends StatelessWidget {
         ),
         backgroundColor: const Color(0xFF4B2F3E),
       ),
+      backgroundColor: const Color(0xFF4B2F3E),
       body: ListView.separated(
         itemCount: auftraege.length,
         separatorBuilder: (context, index) => Divider(

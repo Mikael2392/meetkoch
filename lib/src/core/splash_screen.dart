@@ -59,14 +59,14 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: Color(0xFFFF8AA7),
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
 
             // Animierter Ladeindikator
-            const CircularProgressIndicator(
+            CircularProgressIndicator(
               color: Colors.white, // Farbe des Ladeindikators
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'Loading...',
               style: TextStyle(
                 color: Colors.white,

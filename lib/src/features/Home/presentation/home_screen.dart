@@ -1,27 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // Für JSON-Konvertierung
 import 'package:meetkoch/src/features/Detail/presentation/detailScreen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final auftraege = [
-      {
-        "name": "Hotel Randolph",
-        "city": "Köln,50674",
-        "description": "BBQ Event mit Food Stationen",
-        "image": "assets/hotel_randolph.png"
-      },
-      {
-        "name": "Martha Craig",
-        "city": "Berlin,10115",
-        "description": "Wir Brauchen Ab 01.05 noch 1 Koch ..",
-        "image": "assets/martha_craig.png"
-      },
-      // Weitere Einträge ...
-    ];
+  _HomeScreenState createState() => _HomeScreenState();
+}
 
+class _HomeScreenState extends State<HomeScreen> {
+  List<Map<String, String>> auftraege = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAuftraegeFromPreferences(); // Lade Aufträge beim Start
+  }
+
+  // Methode, um die Aufträge aus SharedPreferences zu laden
+  Future<void> _loadAuftraegeFromPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? auftraegeString = prefs.getString('auftraege');
+    if (auftraegeString != null) {
+      setState(() {
+        auftraege = List<Map<String, String>>.from(json
+            .decode(auftraegeString)
+            .map((item) => Map<String, String>.from(item)));
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -30,6 +42,7 @@ class HomeScreen extends StatelessWidget {
         ),
         backgroundColor: const Color(0xFF4B2F3E),
       ),
+      backgroundColor: const Color(0xFF4B2F3E),
       body: ListView.separated(
         itemCount: auftraege.length,
         separatorBuilder: (context, index) => Divider(
@@ -58,7 +71,10 @@ class HomeScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => DetailScreen(),
+                  builder: (context) => AuftragDetailScreen(
+                    auftrag:
+                        auftraege[index], // Übergabe des ausgewählten Auftrags
+                  ),
                 ),
               );
             },
