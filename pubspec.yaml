@@ -7,16 +7,15 @@ environment:
   sdk: '>=3.4.3 <4.0.0'
 
 dependencies:
+  firebase_core: ^3.4.1
+  firebase_auth: ^5.2.0
   flutter:
     sdk: flutter
   flutter_native_splash: ^2.4.1
+  image_picker: ^1.1.2
+  shared_preferences: ^2.3.2
 
-flutter_native_splash:
-  color: "#4B2F3E"
-  branding: assets/icons/MeetKoch (1).png
-  branding_mode: bottom
-  android: true
-  ios: true
+
 
 dev_dependencies:
   flutter_test:
