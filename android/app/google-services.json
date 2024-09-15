@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "28049729949",
+    "project_id": "meetkoch-b248e",
+    "storage_bucket": "meetkoch-b248e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:28049729949:android:292057244b8331b0196774",
+        "android_client_info": {
+          "package_name": "com.meetkoch.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRMWDoSgRo4JKtH1E49xLvHEei8SpBe6Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

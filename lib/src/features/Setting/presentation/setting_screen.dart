@@ -117,7 +117,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Account-Option zum Bearbeiten des Profils
+                // Option zum Bearbeiten des Profils
                 GestureDetector(
                   onTap: () {
                     Navigator.push(

@@ -27,7 +27,7 @@ class _AppHomeState extends State<AppHome> {
             currentIndex = index;
           });
         },
-        indicatorColor: Color.fromARGB(255, 121, 76, 100),
+        indicatorColor: const Color.fromARGB(255, 121, 76, 100),
         selectedIndex: currentIndex,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),

@@ -46,7 +46,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildNormalContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +58,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             _buildNormalContainer(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,13 +66,13 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
                   _buildSectionTitle('Registrierung abschliessen'),
                   _buildSwitchTile('AGB'),
                   _buildSwitchTile('Datenschutz'),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
                       // Handle registration logic
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color.fromARGB(255, 203, 173, 89),
+                      backgroundColor: const Color.fromARGB(255, 203, 173, 89),
                     ),
                     child: const Text(
                       'Registrieren',
@@ -116,7 +116,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
       child: TextField(
         obscureText: isPassword,
         decoration: InputDecoration(
-          border: OutlineInputBorder(),
+          border: const OutlineInputBorder(),
           labelText: label,
         ),
       ),
@@ -127,7 +127,7 @@ class Screen2RegistrierenArbeitsgeber extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: TextStyle(fontSize: 16)),
+        Text(title, style: const TextStyle(fontSize: 16)),
         Switch(value: false, onChanged: (bool newValue) {}),
       ],
     );

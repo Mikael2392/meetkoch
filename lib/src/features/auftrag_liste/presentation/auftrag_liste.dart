@@ -58,7 +58,7 @@ class AuftraegeListe extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Placeholder(),
+                  builder: (context) => const Placeholder(),
                 ),
               );
             },

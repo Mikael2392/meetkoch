@@ -100,7 +100,7 @@ class RegistrationScreen1 extends StatelessWidget {
           ElevatedButton(
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color.fromARGB(255, 188, 180, 133),
+              backgroundColor: const Color.fromARGB(255, 188, 180, 133),
               padding:
                   const EdgeInsets.symmetric(horizontal: 100.0, vertical: 12.0),
             ),
