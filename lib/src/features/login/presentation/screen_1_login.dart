@@ -1,9 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:meetkoch/src/core/presentation/app_home.dart';
-import 'package:meetkoch/src/features/Home/presentation/home_screen.dart';
+import 'package:meetkoch/src/features/passwort_vergessen/screen_passwort_vergessen.dart';
 import 'package:meetkoch/src/features/registrieren/presentation/screen_1_registrieren.dart';
-import 'dart:async'; // Für den Delayed-Timer
+import 'dart:async';
 
 class MeetKochApp extends StatelessWidget {
   const MeetKochApp({super.key});
@@ -51,15 +52,35 @@ class _MeetKochHomeState extends State<MeetKochHome> {
       });
 
       try {
-        await _auth.signInWithEmailAndPassword(
+        // Sign in with email and password
+        UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const AppHome()),
-        );
+        // Fetch user role from Firestore
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+
+        if (userDoc.exists) {
+          // Retrieve the user's role (freelancer or employer)
+          String role = userDoc['role'];
+
+          // Navigate to AppHome and pass the role
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  AppHome(role: role), // Pass the role to AppHome
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage = 'Benutzerrolle konnte nicht gefunden werden.';
+          });
+        }
       } on FirebaseAuthException catch (e) {
         setState(() {
           _errorMessage = e.message;
@@ -197,6 +218,27 @@ class _MeetKochHomeState extends State<MeetKochHome> {
                                     style: TextStyle(color: Colors.black),
                                   ),
                                 ),
+                          const SizedBox(height: 20),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Passwort vergessen? Hier klicken',
+                              style: TextStyle(
+                                color: const Color.fromARGB(255, 244, 244, 245)
+                                    .withOpacity(0.8),
+                                fontSize: 16,
+                                // decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 200),
                           ElevatedButton(
                             onPressed: () {

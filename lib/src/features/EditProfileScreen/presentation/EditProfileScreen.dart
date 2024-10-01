@@ -1,7 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -24,38 +25,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _loadProfileData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    User? user = FirebaseAuth.instance.currentUser;
 
-    setState(() {
-      _firstNameController.text = prefs.getString('first_name') ?? '';
-      _lastNameController.text = prefs.getString('last_name') ?? '';
-      _emailController.text = prefs.getString('email') ?? '';
-      _numberController.text = prefs.getString('number') ?? '';
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
-      String? imagePath = prefs.getString('profile_image');
-      if (imagePath != null && imagePath.isNotEmpty) {
-        _image = File(imagePath);
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+
+        setState(() {
+          _firstNameController.text = userData['vorname'] ?? '';
+          _lastNameController.text = userData['nachname'] ?? '';
+          _emailController.text = userData['email'] ?? '';
+          _numberController.text = userData['telefon'] ?? '';
+        });
+
+        // Handle profile image if it's stored as a URL
+        // You would handle downloading or using a local placeholder.
       }
-    });
+    }
   }
 
   Future<void> _saveProfileData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    User? user = FirebaseAuth.instance.currentUser;
 
-    await prefs.setString('first_name', _firstNameController.text);
-    await prefs.setString('last_name', _lastNameController.text);
-    await prefs.setString('email', _emailController.text);
-    await prefs.setString('number', _numberController.text);
+    if (user != null) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'vorname': _firstNameController.text,
+        'nachname': _lastNameController.text,
+        'email': _emailController.text,
+        'telefon': _numberController.text,
+        // Optionally, handle the image here (e.g., upload it to Firebase Storage)
+      });
 
-    if (_image != null) {
-      await prefs.setString('profile_image', _image!.path);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Daten erfolgreich gespeichert!')),
+      );
+
+      Navigator.pop(context, true);
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Daten erfolgreich gespeichert!')),
-    );
-
-    Navigator.pop(context);
   }
 
   Future<void> _pickImage() async {

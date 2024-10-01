@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:meetkoch/src/features/EditProfileScreen/presentation/EditProfileScreen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:meetkoch/src/features/login/presentation/screen_1_login.dart';
 import 'dart:io';
 
 class SettingScreen extends StatefulWidget {
@@ -20,23 +22,42 @@ class _SettingScreenState extends State<SettingScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProfileData();
+    _loadUserDataFromFirestore(); // Load data from Firestore
   }
 
-  Future<void> _loadProfileData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+  Future<void> _loadUserDataFromFirestore() async {
+    User? user = FirebaseAuth.instance.currentUser;
 
-    setState(() {
-      _firstName = prefs.getString('first_name') ?? 'Max';
-      _lastName = prefs.getString('last_name') ?? 'Mustermann';
-      _email = prefs.getString('email') ?? 'max@example.com';
-      _number = prefs.getString('number') ?? '1234567890';
+    if (user != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
-      String? imagePath = prefs.getString('profile_image');
-      if (imagePath != null && imagePath.isNotEmpty) {
-        _profileImage = File(imagePath);
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+
+        // Directly update the state with Firestore data
+        setState(() {
+          _firstName = userData['vorname'] ?? 'Max';
+          _lastName = userData['nachname'] ?? 'Mustermann';
+          _email = userData['email'] ?? 'max@example.com';
+          _number = userData['telefon'] ?? '1234567890';
+        });
+
+        print("Benutzerdaten erfolgreich geladen.");
+      } else {
+        print("Benutzerdaten nicht gefunden.");
       }
-    });
+    }
+  }
+
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MeetKochApp()),
+    );
   }
 
   @override
@@ -117,7 +138,7 @@ class _SettingScreenState extends State<SettingScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Option zum Bearbeiten des Profils
+                // Account Button
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -126,8 +147,7 @@ class _SettingScreenState extends State<SettingScreen> {
                         builder: (context) => const EditProfileScreen(),
                       ),
                     ).then((_) {
-                      // Nach dem Zurückkommen von EditProfileScreen die Daten neu laden
-                      _loadProfileData();
+                      _loadUserDataFromFirestore(); // Reload data after editing
                     });
                   },
                   child: Container(
@@ -155,7 +175,37 @@ class _SettingScreenState extends State<SettingScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
+
+                // Sign Out Button
+                GestureDetector(
+                  onTap: _signOut,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD2D4C8),
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    padding: const EdgeInsets.all(16.0),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.logout,
+                          color: Color(0xFF4B2F3E),
+                        ),
+                        SizedBox(width: 16),
+                        Text(
+                          'Abmelden',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4B2F3E),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

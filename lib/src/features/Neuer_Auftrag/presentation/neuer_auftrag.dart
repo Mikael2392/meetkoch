@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meetkoch/src/features/Neuer_Auftrag/presentation/auftrag_formular.dart';
 
 class ArbeitsgeberAuftragListe extends StatefulWidget {
@@ -11,7 +11,9 @@ class ArbeitsgeberAuftragListe extends StatefulWidget {
 }
 
 class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
-  List<Map<String, String>> currentAuftraege = [];
+  List<Map<String, dynamic>> currentAuftraege = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
@@ -19,46 +21,48 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
     _loadCurrentAuftraege(); // Lädt nur die Aufträge des aktuellen Arbeitsgebers
   }
 
-  // Methode zum Hinzufügen eines neuen Auftrags und Speichern in SharedPreferences
-  void _addAuftrag(Map<String, String> neuerAuftrag) {
-    setState(() {
+  // Methode zum Hinzufügen eines neuen Auftrags und Speichern in Firestore
+  Future<void> _addAuftrag(Map<String, dynamic> neuerAuftrag) async {
+    User? currentUser = _auth.currentUser;
+
+    if (currentUser != null) {
       neuerAuftrag['isFromCurrentUser'] =
-          'true'; // Kennzeichnet den Auftrag als vom aktuellen Arbeitgeber
-      currentAuftraege.add(neuerAuftrag);
-      _saveAllAuftraegeToPreferences(); // Speichert den Auftrag in SharedPreferences
-    });
-  }
+          true; // Markiere Auftrag als vom aktuellen User
+      neuerAuftrag['userId'] =
+          currentUser.uid; // Speichere die Benutzer-ID (Arbeitsgeber)
 
-  // Methode zum Löschen eines Auftrags
-  void _deleteAuftrag(int index) {
-    setState(() {
-      currentAuftraege.removeAt(index); // Löscht den Auftrag aus der Liste
-      _saveAllAuftraegeToPreferences(); // Speichert die aktualisierte Liste in SharedPreferences
-    });
-  }
+      await _firestore
+          .collection('auftraege')
+          .add(neuerAuftrag); // Speichern in Firestore
 
-  // Lädt die gespeicherten Aufträge, die vom aktuellen Arbeitgeber erstellt wurden
-  Future<void> _loadCurrentAuftraege() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? auftraegeString = prefs.getString('auftraege');
-    if (auftraegeString != null) {
-      List<Map<String, String>> allAuftraege = List<Map<String, String>>.from(
-          json
-              .decode(auftraegeString)
-              .map((item) => Map<String, String>.from(item)));
-      setState(() {
-        currentAuftraege = allAuftraege
-            .where((auftrag) => auftrag['isFromCurrentUser'] == 'true')
-            .toList();
-      });
+      _loadCurrentAuftraege(); // Nach dem Speichern die Aufträge erneut laden
     }
   }
 
-  // Speichert alle Aufträge (vom aktuellen Arbeitgeber und anderen) in SharedPreferences
-  Future<void> _saveAllAuftraegeToPreferences() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String updatedAuftraegeString = json.encode(currentAuftraege);
-    await prefs.setString('auftraege', updatedAuftraegeString);
+  // Methode zum Löschen eines Auftrags aus Firestore
+  Future<void> _deleteAuftrag(String documentId) async {
+    await _firestore.collection('auftraege').doc(documentId).delete();
+    _loadCurrentAuftraege(); // Nach dem Löschen die Aufträge erneut laden
+  }
+
+  // Lädt die gespeicherten Aufträge, die vom aktuellen Arbeitgeber (Benutzer) erstellt wurden, aus Firestore
+  Future<void> _loadCurrentAuftraege() async {
+    User? currentUser = _auth.currentUser;
+
+    if (currentUser != null) {
+      final QuerySnapshot snapshot = await _firestore
+          .collection('auftraege')
+          .where('userId',
+              isEqualTo:
+                  currentUser.uid) // Nur Aufträge des aktuellen Benutzers laden
+          .get();
+
+      setState(() {
+        currentAuftraege = snapshot.docs
+            .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
+            .toList();
+      });
+    }
   }
 
   @override
@@ -99,6 +103,11 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                 height: 1,
               ),
               itemBuilder: (context, index) {
+                int currentParticipants =
+                    currentAuftraege[index]["currentParticipants"] ?? 0;
+                int maxParticipants =
+                    currentAuftraege[index]["maxParticipants"] ?? 0;
+
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundImage:
@@ -114,26 +123,29 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                         currentAuftraege[index]["description"] as String,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      Text(
+                        "$currentParticipants von $maxParticipants Teilnehmern",
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   trailing: const Icon(Icons.arrow_forward_ios),
                   isThreeLine: true,
                   onTap: () {
-                    // Öffne den Bearbeitungsbildschirm und übergebe den aktuellen Auftrag
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => NeuerAuftragScreen(
-                          auftrag:
-                              currentAuftraege[index], // Übergabe des Auftrags
-                          onSave: (updatedAuftrag) {
-                            setState(() {
-                              currentAuftraege[index] = updatedAuftrag;
-                              _saveAllAuftraegeToPreferences();
-                            });
+                          auftrag: currentAuftraege[index],
+                          onSave: (updatedAuftrag) async {
+                            await _firestore
+                                .collection('auftraege')
+                                .doc(currentAuftraege[index]['id'])
+                                .update(updatedAuftrag);
+                            _loadCurrentAuftraege(); // Aktualisierte Aufträge laden
                           },
                           onDelete: () {
-                            _deleteAuftrag(index); // Auftragslöschung
+                            _deleteAuftrag(currentAuftraege[index]['id']);
                           },
                         ),
                       ),
