@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Für die Datumsausgabe
 import 'package:meetkoch/src/features/Detail/presentation/detailScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-  _loadUserData(); // Benutzerinformationen laden 
+    _loadUserData(); // Benutzerinformationen laden
   }
 
   Future<void> _loadUserData() async {
@@ -33,6 +34,21 @@ class _HomeScreenState extends State<HomeScreen> {
         print("Benutzerinformationen nicht gefunden.");
       }
     }
+  }
+
+  // Methode zum Abrufen des Profilbildes des Benutzers
+  Future<Widget> _getUserProfileImage(String userId) async {
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(userId).get();
+    String? userImage = userDoc['imageUrl'];
+
+    return CircleAvatar(
+      radius: 30,
+      backgroundImage: userImage != null && userImage.isNotEmpty
+          ? NetworkImage(userImage)
+          : const AssetImage('assets/icons/default.png')
+              as ImageProvider, // Standardbild
+    );
   }
 
   @override
@@ -94,39 +110,59 @@ class _HomeScreenState extends State<HomeScreen> {
                   auftraege[index]["currentParticipants"] ?? 0;
               int maxParticipants = auftraege[index]["maxParticipants"] ?? 0;
 
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: AssetImage(
-                    auftraege[index]["image"] ?? 'assets/default.png',
-                  ),
-                ),
-                title: Text(auftraege[index]["name"] ?? 'Kein Name'),
-                tileColor: const Color.fromARGB(255, 206, 157, 183),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(auftraege[index]["city"] ?? 'Unbekannte Stadt'),
-                    Text(
-                      auftraege[index]["description"] ?? 'Keine Beschreibung',
-                      overflow: TextOverflow.ellipsis,
+              // Zugriff auf das Datum, wenn vorhanden
+              DateTime? startDate;
+              if (auftraege[index]['startDate'] != null) {
+                startDate =
+                    (auftraege[index]['startDate'] as Timestamp).toDate();
+              }
+
+              return FutureBuilder<Widget>(
+                future: _getUserProfileImage(auftraege[index]['userId']),
+                builder: (context, profileImageSnapshot) {
+                  if (profileImageSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const CircularProgressIndicator(); // Ladeanzeige, solange das Bild geladen wird
+                  }
+
+                  return ListTile(
+                    leading: profileImageSnapshot.hasData
+                        ? profileImageSnapshot.data!
+                        : const CircleAvatar(
+                            radius: 30,
+                            backgroundImage: AssetImage(
+                                'assets/icons/default.png'), // Standardbild
+                          ),
+                    title: Text(auftraege[index]["name"] ?? 'Kein Name'),
+                    tileColor: const Color.fromARGB(255, 206, 157, 183),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(auftraege[index]["city"] ?? 'Unbekannte Stadt'),
+                        // Anzeige der Teilnehmerzahl
+                        Text(
+                          "$currentParticipants von $maxParticipants Teilnehmern",
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        // Anzeige des Datums, wenn vorhanden
+                        if (startDate != null)
+                          Text(
+                            'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                          ),
+                      ],
                     ),
-                    // Anzeige der Teilnehmerzahl
-                    Text(
-                      "$currentParticipants von $maxParticipants Teilnehmern",
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                isThreeLine: true,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AuftragDetailScreen(
-                        auftrag: auftraege[index], // Übergabe des Auftrags
-                      ),
-                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    isThreeLine: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AuftragDetailScreen(
+                            auftrag: auftraege[index], // Übergabe des Auftrags
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               );

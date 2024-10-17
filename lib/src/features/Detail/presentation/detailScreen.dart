@@ -2,16 +2,55 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class AuftragDetailScreen extends StatelessWidget {
+class AuftragDetailScreen extends StatefulWidget {
   final Map<String, dynamic> auftrag;
 
   const AuftragDetailScreen({super.key, required this.auftrag});
 
+  @override
+  _AuftragDetailScreenState createState() => _AuftragDetailScreenState();
+}
+
+class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
+  bool hasAcceptedThisJob =
+      false; // Überprüfung, ob der Benutzer diesen Auftrag angenommen hat
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfUserHasAcceptedThisJob(); // Überprüfen, ob der Benutzer diesen Auftrag bereits angenommen hat
+  }
+
+  // Methode zum Überprüfen, ob der Benutzer diesen Auftrag angenommen hat
+  Future<void> _checkIfUserHasAcceptedThisJob() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+      // Überprüfen, ob der Benutzer den aktuellen Auftrag angenommen hat
+      final DocumentSnapshot result = await _firestore
+          .collection('auftraege')
+          .doc(widget.auftrag['id'])
+          .get();
+
+      if (result.exists) {
+        Map<String, dynamic> data = result.data() as Map<String, dynamic>;
+        if (data['assignedUser'] == user.uid) {
+          setState(() {
+            hasAcceptedThisJob = true;
+          });
+          print('Benutzer hat diesen Auftrag bereits angenommen.');
+        } else {
+          print('Benutzer hat diesen Auftrag noch nicht angenommen.');
+        }
+      }
+    }
+  }
+
   // Methode zum Aktualisieren der Teilnehmeranzahl
   Future<void> _updateParticipants(BuildContext context) async {
     final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-    User? user =
-        FirebaseAuth.instance.currentUser; // Aktuellen Benutzer abrufen
+    User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -22,36 +61,44 @@ class AuftragDetailScreen extends StatelessWidget {
       return;
     }
 
-    int currentParticipants = auftrag['currentParticipants'] ?? 0;
-    int maxParticipants = auftrag['maxParticipants'] ?? 0;
+    int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
+    int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
 
     if (currentParticipants < maxParticipants) {
       currentParticipants++;
 
       // Auftrag in Firestore aktualisieren: Teilnehmerzahl, als angenommen markieren und Benutzer zuweisen
-      await _firestore.collection('auftraege').doc(auftrag['id']).update({
+      await _firestore
+          .collection('auftraege')
+          .doc(widget.auftrag['id'])
+          .update({
         'currentParticipants': currentParticipants,
-        'isAccepted': true, // Auftrag als angenommen markieren
-        'assignedUser': user.uid, // Auftrag dem aktuellen Benutzer zuweisen
+        'isAccepted': true,
+        'assignedUser': user.uid,
       });
 
-      // Wenn die maximale Teilnehmerzahl erreicht ist, Auftrag löschen
       if (currentParticipants == maxParticipants) {
-        await _firestore.collection('auftraege').doc(auftrag['id']).delete();
+        await _firestore
+            .collection('auftraege')
+            .doc(widget.auftrag['id'])
+            .update({
+          'isVisible': false,
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('Maximale Teilnehmerzahl erreicht. Auftrag gelöscht!'),
+            content: Text(
+                'Maximale Teilnehmerzahl erreicht. Auftrag ist jetzt abgeschlossen!'),
           ),
         );
-        Navigator.pop(context); // Zurück zum vorherigen Screen
+        Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Auftrag wurde angenommen!'),
           ),
         );
-        Navigator.pop(context); // Zurück zum vorherigen Screen
+        Navigator.pop(context);
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,8 +111,8 @@ class AuftragDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    int currentParticipants = auftrag['currentParticipants'] ?? 0;
-    int maxParticipants = auftrag['maxParticipants'] ?? 0;
+    int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
+    int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -91,7 +138,7 @@ class AuftragDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              auftrag['name'] ?? '',
+              widget.auftrag['name'] ?? '',
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.white,
@@ -108,7 +155,7 @@ class AuftragDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              auftrag['city'] ?? '',
+              widget.auftrag['city'] ?? '',
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.white,
@@ -125,7 +172,7 @@ class AuftragDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              auftrag['description'] ?? '',
+              widget.auftrag['description'] ?? '',
               style: const TextStyle(
                 fontSize: 16,
                 color: Colors.white,
@@ -150,16 +197,22 @@ class AuftragDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                _updateParticipants(context);
-              },
+              onPressed: hasAcceptedThisJob
+                  ? null // Deaktiviert, wenn der Benutzer diesen Auftrag bereits angenommen hat
+                  : () {
+                      _updateParticipants(context);
+                    },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 188, 180, 133),
+                backgroundColor: hasAcceptedThisJob
+                    ? Colors.grey // Button wird grau, wenn deaktiviert
+                    : const Color.fromARGB(255, 188, 180, 133),
                 padding: const EdgeInsets.symmetric(
                     horizontal: 100.0, vertical: 12.0),
               ),
-              child: const Text('Auftrag übernehmen',
-                  style: TextStyle(color: Colors.black)),
+              child: const Text(
+                'Auftrag übernehmen',
+                style: TextStyle(color: Colors.black),
+              ),
             ),
           ],
         ),

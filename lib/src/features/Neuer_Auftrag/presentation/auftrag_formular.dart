@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart'; // Für die Datumsauswahl und Formatierung
 
 class NeuerAuftragScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
@@ -25,8 +27,11 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
       TextEditingController();
   int currentParticipants = 0;
   int maxParticipants = 0;
-  String imagePath = "assets/default.png"; // Standardbild
+  String imagePath = "assets/icons/default.png"; // Standardbild
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -38,17 +43,46 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
       descriptionController.text = widget.auftrag!['description'] ?? '';
       maxParticipants = widget.auftrag!['maxParticipants'] ?? 0;
       currentParticipants = widget.auftrag!['currentParticipants'] ?? 0;
-      imagePath = widget.auftrag!['image'] ?? 'assets/default.png';
+      imagePath = widget.auftrag!['image'] ?? 'assets/icons/default.png';
       maxParticipantsController.text = maxParticipants.toString();
+
+      // Lade bestehendes Datum, falls vorhanden
+      if (widget.auftrag!['startDate'] != null) {
+        _startDate = (widget.auftrag!['startDate'] as Timestamp).toDate();
+      }
+      if (widget.auftrag!['endDate'] != null) {
+        _endDate = (widget.auftrag!['endDate'] as Timestamp).toDate();
+      }
     }
   }
 
-  // Methode zum Speichern des Auftrags inklusive Benutzer-ID (uid)
+  Future<void> _selectDate(BuildContext context, bool isStartDate) async {
+    DateTime initialDate =
+        isStartDate ? _startDate ?? DateTime.now() : _endDate ?? DateTime.now();
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        if (isStartDate) {
+          _startDate = pickedDate;
+        } else {
+          _endDate = pickedDate;
+        }
+      });
+    }
+  }
+
+  // Methode zum Speichern des Auftrags inklusive Benutzer-ID und Datum
   Future<void> _saveAuftrag() async {
     User? currentUser = _auth.currentUser; // Abrufen des aktuellen Benutzers
 
     if (currentUser != null) {
-      // Auftrag speichern mit der aktuellen Benutzer-ID
+      // Auftrag speichern mit der aktuellen Benutzer-ID und Datum
       widget.onSave({
         "name": nameController.text,
         "city": cityController.text,
@@ -57,6 +91,11 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
         "maxParticipants": int.parse(maxParticipantsController.text),
         "currentParticipants": currentParticipants,
         "userId": currentUser.uid, // Benutzer-ID hinzufügen
+        "startDate": _startDate != null
+            ? Timestamp.fromDate(_startDate!)
+            : null, // Startdatum
+        "endDate":
+            _endDate != null ? Timestamp.fromDate(_endDate!) : null, // Enddatum
       });
 
       // Zurück zur vorherigen Ansicht nach dem Speichern
@@ -64,20 +103,6 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
     } else {
       // Optional: Fehlerbehandlung, falls kein Benutzer angemeldet ist
       print("Kein Benutzer angemeldet.");
-    }
-  }
-
-  void _incrementParticipants() {
-    if (currentParticipants < maxParticipants) {
-      setState(() {
-        currentParticipants++;
-      });
-
-      if (currentParticipants == maxParticipants) {
-        // Auftrag automatisch löschen, wenn die maximale Teilnehmerzahl erreicht ist
-        widget.onDelete!();
-        Navigator.pop(context);
-      }
     }
   }
 
@@ -96,6 +121,37 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(_auth
+                      .currentUser!.uid) // Die aktuelle Benutzer-ID abrufen
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator(); // Ladesymbol anzeigen
+                }
+                if (snapshot.hasData) {
+                  var userData = snapshot.data!.data() as Map<String, dynamic>;
+                  String? userImage = userData['imageUrl'];
+
+                  return CircleAvatar(
+                    radius: 30,
+                    backgroundImage: userImage != null && userImage.isNotEmpty
+                        ? NetworkImage(userImage)
+                        : const AssetImage('assets/icons/default.png')
+                            as ImageProvider, // Standardbild
+                  );
+                } else {
+                  return const CircleAvatar(
+                    radius: 30,
+                    backgroundImage:
+                        AssetImage('assets/icons/default.png'), // Standardbild
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 10),
             TextField(
               controller: nameController,
               decoration: InputDecoration(
@@ -154,9 +210,34 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
               '$currentParticipants von $maxParticipants Teilnehmern',
               style: const TextStyle(color: Colors.white),
             ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _selectDate(
+                        context, true), // Datumsauswahl für Startdatum
+                    child: Text(_startDate == null
+                        ? 'Startdatum auswählen'
+                        : 'Startdatum: ${DateFormat('dd.MM.yyyy').format(_startDate!)}'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _selectDate(
+                        context, false), // Datumsauswahl für Enddatum
+                    child: Text(_endDate == null
+                        ? 'Enddatum auswählen'
+                        : 'Enddatum: ${DateFormat('dd.MM.yyyy').format(_endDate!)}'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _saveAuftrag, // Methode zum Speichern mit Benutzer-ID
+              onPressed:
+                  _saveAuftrag, // Methode zum Speichern mit Benutzer-ID und Datum
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 188, 180, 133),
                 padding: const EdgeInsets.symmetric(
@@ -164,17 +245,6 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
               ),
               child: const Text('Speichern',
                   style: TextStyle(color: Colors.black)),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _incrementParticipants,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 188, 180, 133),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 100.0, vertical: 12.0),
-              ),
-              child: const Text('Teilnehmer hinzufügen',
-                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),

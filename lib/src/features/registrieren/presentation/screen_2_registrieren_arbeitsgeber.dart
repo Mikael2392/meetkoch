@@ -100,7 +100,7 @@ class _Screen2RegistrierenArbeitsgeberState
         title: const Text(
           'Registrieren',
           style: TextStyle(
-              color: Color.fromARGB(255, 167, 188, 168)), // Textfarbe AppBar
+              color: Color.fromARGB(255, 254, 254, 254)), // Textfarbe AppBar
         ),
         backgroundColor: const Color(0xFF4B2F3E), // Hintergrundfarbe der AppBar
         iconTheme:

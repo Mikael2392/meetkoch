@@ -1,10 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Für die Datumsausgabe
 import 'package:meetkoch/src/features/Detail/presentation/detailScreen.dart';
 
 class AuftraegeListe extends StatelessWidget {
   const AuftraegeListe({super.key});
+
+  // Funktion zum Abrufen des Profilbildes des Benutzers
+  Future<Widget> _getUserProfileImage(String userId) async {
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(userId).get();
+    String? userImage = userDoc['imageUrl'];
+
+    return CircleAvatar(
+      radius: 30,
+      backgroundImage: userImage != null && userImage.isNotEmpty
+          ? NetworkImage(userImage)
+          : const AssetImage('assets/icons/default.png')
+              as ImageProvider, // Standardbild
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +29,6 @@ class AuftraegeListe extends StatelessWidget {
     User? user =
         FirebaseAuth.instance.currentUser; // Aktuellen Benutzer abrufen
 
-    // Überprüfen, ob ein Benutzer eingeloggt ist
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
@@ -24,7 +40,6 @@ class AuftraegeListe extends StatelessWidget {
       );
     }
 
-    // Query, um nur die angenommenen Aufträge des Benutzers anzuzeigen
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -37,9 +52,8 @@ class AuftraegeListe extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('auftraege')
-            .where('isAccepted', isEqualTo: true) // Nur angenommene Aufträge
-            .where('assignedUser',
-                isEqualTo: user!.uid) // Nur Aufträge des aktuellen Benutzers
+            .where('isAccepted', isEqualTo: true)
+            .where('assignedUser', isEqualTo: user.uid)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -66,33 +80,55 @@ class AuftraegeListe extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               var auftrag = auftraege[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: AssetImage(auftrag['image'] as String),
-                ),
-                title: Text(auftrag['name'] as String),
-                tileColor: const Color.fromARGB(255, 206, 157, 183),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(auftrag['city'] as String),
-                    Text(
-                      auftrag['description'] as String,
-                      overflow: TextOverflow.ellipsis,
+
+              // Datum des Auftrags, falls vorhanden
+              DateTime? startDate;
+              if (auftrag['startDate'] != null) {
+                startDate = (auftrag['startDate'] as Timestamp).toDate();
+              }
+
+              return FutureBuilder<Widget>(
+                future: _getUserProfileImage(auftrag['userId']),
+                builder: (context, profileImageSnapshot) {
+                  if (profileImageSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  }
+
+                  return ListTile(
+                    leading: profileImageSnapshot.hasData
+                        ? profileImageSnapshot.data!
+                        : const CircleAvatar(
+                            radius: 30,
+                            backgroundImage:
+                                AssetImage('assets/icons/default.png'),
+                          ),
+                    title: Text(auftrag['name'] ?? 'Kein Name'),
+                    tileColor: const Color.fromARGB(255, 206, 157, 183),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(auftrag['city'] ?? 'Unbekannte Stadt'),
+                        // Datum anzeigen, wenn vorhanden
+                        if (startDate != null)
+                          Text(
+                            'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                isThreeLine: true,
-                onTap: () {
-                  // Weiterleitung zur Detailansicht des Auftrags
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AuftragDetailScreen(
-                        auftrag: auftrag.data() as Map<String, dynamic>,
-                      ),
-                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios),
+                    isThreeLine: true,
+                    onTap: () {
+                      // Weiterleitung zur Detailansicht des Auftrags
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AuftragDetailScreen(
+                            auftrag: auftrag.data() as Map<String, dynamic>,
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               );

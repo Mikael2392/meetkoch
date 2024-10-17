@@ -31,7 +31,8 @@ class _MeetKochHomeState extends State<MeetKochHome> {
   final _formKey = GlobalKey<FormState>();
   String? _errorMessage;
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // Umschalten der Passwortsichtbarkeit
+  bool _isPasswordVisible = false;
+
   bool _isLogoAtTop = true;
 
   @override
@@ -52,7 +53,6 @@ class _MeetKochHomeState extends State<MeetKochHome> {
       });
 
       try {
-        // Sign in with email and password
         UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),

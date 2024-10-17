@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart'; // Für die Datumsausgabe
 import 'package:meetkoch/src/features/Neuer_Auftrag/presentation/auftrag_formular.dart';
 
 class ArbeitsgeberAuftragListe extends StatefulWidget {
@@ -65,6 +66,21 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
     }
   }
 
+  // Methode zum Abrufen des Profilbildes des Benutzers
+  Future<Widget> _getUserProfileImage(String userId) async {
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(userId).get();
+    String? userImage = userDoc['imageUrl'];
+
+    return CircleAvatar(
+      radius: 30,
+      backgroundImage: userImage != null && userImage.isNotEmpty
+          ? NetworkImage(userImage)
+          : const AssetImage('assets/icons/default.png')
+              as ImageProvider, // Standardbild
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,10 +124,32 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                 int maxParticipants =
                     currentAuftraege[index]["maxParticipants"] ?? 0;
 
+                // Zugriff auf das Datum, wenn vorhanden
+                DateTime? startDate;
+                if (currentAuftraege[index]['startDate'] != null) {
+                  startDate =
+                      (currentAuftraege[index]['startDate'] as Timestamp)
+                          .toDate();
+                }
+
                 return ListTile(
-                  leading: CircleAvatar(
-                    backgroundImage:
-                        AssetImage(currentAuftraege[index]["image"] as String),
+                  leading: FutureBuilder<Widget>(
+                    future:
+                        _getUserProfileImage(currentAuftraege[index]['userId']),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      }
+                      if (snapshot.hasData) {
+                        return snapshot.data!;
+                      } else {
+                        return const CircleAvatar(
+                          radius: 30,
+                          backgroundImage: AssetImage(
+                              'assets/icons/default.png'), // Standardbild
+                        );
+                      }
+                    },
                   ),
                   title: Text(currentAuftraege[index]["name"] as String),
                   tileColor: const Color.fromARGB(255, 206, 157, 183),
@@ -119,10 +157,11 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(currentAuftraege[index]["city"] as String),
-                      Text(
-                        currentAuftraege[index]["description"] as String,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      // Datum anzeigen, wenn vorhanden
+                      if (startDate != null)
+                        Text(
+                          'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                        ),
                       Text(
                         "$currentParticipants von $maxParticipants Teilnehmern",
                         style: const TextStyle(fontWeight: FontWeight.bold),

@@ -27,9 +27,9 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace = "com.example.meetkoch"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    namespace = "com.meetkoch.app"
+    compileSdk 34
+    ndkVersion = '27.0.11902837 rc2'
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -38,13 +38,13 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.meetkoch"
+        applicationId = "com.meetkoch.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk = flutter.minSdkVersion
+        minSdkVersion 23
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutterVersionCode.toInteger()
-        versionName = flutterVersionName
+        versionCode = 3
+        versionName = "1.0.3"
     }
 
     buildTypes {
@@ -54,6 +54,7 @@ android {
             signingConfig = signingConfigs.debug
         }
     }
+    buildToolsVersion '35.0.0 rc4'
 }
 
 flutter {

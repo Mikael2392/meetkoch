@@ -12,7 +12,7 @@ class RegistrationScreen1 extends StatelessWidget {
         title: const Text(
           'Registrieren',
           style: TextStyle(
-            color: Color.fromARGB(255, 167, 188, 168),
+            color: Color.fromARGB(255, 255, 255, 255),
           ),
         ),
         backgroundColor: const Color(0xFF4B2F3E),

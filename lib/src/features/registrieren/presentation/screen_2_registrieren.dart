@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:meetkoch/src/features/Home/presentation/home_screen.dart';
 import 'package:meetkoch/src/features/login/presentation/screen_1_login.dart';
 
 class RegistrationScreenFreiberufler extends StatefulWidget {
@@ -100,7 +99,7 @@ class _RegistrationScreenFreiberuflerState
       appBar: AppBar(
         title: const Text(
           'Registrieren',
-          style: TextStyle(color: Color.fromARGB(255, 167, 188, 168)),
+          style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
         ),
         backgroundColor: const Color(0xFF4B2F3E),
         iconTheme: const IconThemeData(color: Colors.black),
