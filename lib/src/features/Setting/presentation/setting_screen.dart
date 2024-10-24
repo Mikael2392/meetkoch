@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/BewertungenScreen/BewertungenScreen.dart';
+import 'package:meetkoch/src/features/BewertungenScreen/UserReviewScreen.dart';
 import 'package:meetkoch/src/features/EditProfileScreen/presentation/EditProfileScreen.dart';
+import 'package:meetkoch/src/features/Galerie/Galerie.dart';
 import 'package:meetkoch/src/features/Verlauf/VerlaufScreen.dart';
 import 'package:meetkoch/src/features/login/presentation/screen_1_login.dart';
 
@@ -176,6 +177,46 @@ class _SettingScreenState extends State<SettingScreen> {
               ),
               const SizedBox(height: 16),
 
+              // Galerie Button
+              GestureDetector(
+                onTap: () {
+                  // Hier kannst du die Funktion für den Zugriff auf die Galerie implementieren
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GalerieScreen(
+                        userId: '',
+                      ), // Hier musst du die VerlaufScreen definieren
+                    ),
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD2D4C8),
+                    borderRadius: BorderRadius.circular(10.0),
+                  ),
+                  padding: const EdgeInsets.all(16.0),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.photo_library, // Icon für Galerie
+                        color: Color(0xFF4B2F3E),
+                      ),
+                      SizedBox(width: 16),
+                      Text(
+                        'Galerie', // Text für den Button
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4B2F3E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Verlauf (Vergangene Aufträge) Button
               GestureDetector(
                 onTap: () {
@@ -184,7 +225,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          const Verlaufscreen(), // Hier musst du die VerlaufScreen definieren
+                          const VerlaufScreen(), // Hier musst du die VerlaufScreen definieren
                     ),
                   );
                 },
@@ -223,7 +264,7 @@ class _SettingScreenState extends State<SettingScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          const BewertungenScreen(), // Hier musst du die BewertungenScreen definieren
+                          const UserReviewScreen(), // Hier musst du die BewertungenScreen definieren
                     ),
                   );
                 },

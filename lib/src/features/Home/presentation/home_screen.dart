@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // Für die Datumsausgabe
-import 'package:meetkoch/src/features/Detail/presentation/detailScreen.dart';
+import 'package:meetkoch/src/features/auftragsdaten/presentation/AuftragsdatenScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

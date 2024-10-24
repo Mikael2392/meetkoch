@@ -56,9 +56,10 @@ class _AppHomeState extends State<AppHome> {
         selectedIndex: currentIndex,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Setting'),
           NavigationDestination(
-              icon: Icon(Icons.ad_units_outlined), label: 'Mein Aufträge'),
+              icon: Icon(Icons.settings), label: 'Einstellungen'),
+          NavigationDestination(
+              icon: Icon(Icons.ad_units_outlined), label: 'Meine Aufträge'),
         ],
       ),
       body: Center(

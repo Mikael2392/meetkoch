@@ -53,15 +53,32 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
     if (currentUser != null) {
       final QuerySnapshot snapshot = await _firestore
           .collection('auftraege')
-          .where('userId',
-              isEqualTo:
-                  currentUser.uid) // Nur Aufträge des aktuellen Benutzers laden
+          .where('userId', isEqualTo: currentUser.uid)
           .get();
 
       setState(() {
-        currentAuftraege = snapshot.docs
-            .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
-            .toList();
+        // Filter: Nur Aufträge anzeigen, die aktuell aktiv sind (zwischen startDate und endDate)
+        currentAuftraege = snapshot.docs.map((doc) {
+          return {'id': doc.id, ...doc.data() as Map<String, dynamic>};
+        }).where((auftrag) {
+          DateTime? startDate;
+          DateTime? endDate;
+
+          if (auftrag['startDate'] != null) {
+            startDate = (auftrag['startDate'] as Timestamp).toDate();
+          }
+          if (auftrag['endDate'] != null) {
+            endDate = (auftrag['endDate'] as Timestamp).toDate();
+          }
+
+          if (startDate != null && endDate != null) {
+            return DateTime.now().isAfter(startDate) &&
+                DateTime.now().isBefore(endDate.add(const Duration(days: 1)));
+          } else if (startDate != null) {
+            return DateTime.now().isAfter(startDate);
+          }
+          return false;
+        }).toList();
       });
     }
   }

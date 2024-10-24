@@ -36,6 +36,7 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     if (widget.auftrag != null) {
       // Falls ein bestehender Auftrag bearbeitet wird, lade die Werte
       nameController.text = widget.auftrag!['name'] ?? '';
@@ -52,6 +53,24 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
       }
       if (widget.auftrag!['endDate'] != null) {
         _endDate = (widget.auftrag!['endDate'] as Timestamp).toDate();
+      }
+    }
+  }
+
+  Future<void> _loadUserData() async {
+    User? currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      var userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (userDoc.exists) {
+        var userData = userDoc.data() as Map<String, dynamic>;
+        // Setze den Benutzernamen im Textfeld
+        setState(() {
+          nameController.text = userData['vorname'] ?? '';
+        });
       }
     }
   }
