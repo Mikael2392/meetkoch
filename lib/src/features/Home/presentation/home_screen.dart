@@ -65,6 +65,10 @@ class _HomeScreenState extends State<HomeScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('auftraege')
+            .where('endDate',
+                isGreaterThan: Timestamp.now()) // Nur aktive Aufträge
+            .orderBy('endDate',
+                descending: true) // Sortieren nach dem neuesten Enddatum
             .snapshots(), // Stream für die 'auftraege'-Sammlung
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

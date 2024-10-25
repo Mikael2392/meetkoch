@@ -197,7 +197,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text(
           'Edit Profile',
           style: TextStyle(
-            color: Color.fromARGB(255, 167, 188, 168),
+            color: Color.fromARGB(255, 248, 248, 248),
           ),
         ),
         backgroundColor: const Color(0xFF4B2F3E),
