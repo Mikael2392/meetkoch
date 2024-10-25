@@ -104,7 +104,7 @@ class UserRatingProfileScreen extends StatelessWidget {
                               profileImageUrl.startsWith('http')
                           ? NetworkImage(profileImageUrl)
                           : const AssetImage('assets/icons/default.png')
-                              as ImageProvider, // Placeholder-Bild bei fehlender URL
+                              as ImageProvider,
                       backgroundColor: Colors.grey[300],
                     ),
                     const SizedBox(height: 20),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:meetkoch/src/features/BewertungenScreen/UserRatingProfileScreen.dart';
 import 'package:meetkoch/src/features/User%20profil/userProfil.dart';
 
 class AuftragDetailScreen extends StatefulWidget {
@@ -82,7 +83,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
           .doc(widget.auftrag['id'])
           .update({
         'currentParticipants': currentParticipants,
-        'assignedUser': user.uid,
+        'assignedUser': user.uid, // Beibehaltung der bestehenden Logik
         'assignedUsers': FieldValue.arrayUnion([
           {
             'uid': user.uid,
@@ -122,225 +123,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     }
   }
 
-  Widget _buildDetailCard(String title, String value, {Function()? onTap}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: onTap != null
-                ? const Color.fromARGB(255, 188, 180, 133).withOpacity(0.3)
-                : Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      value,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    if (onTap != null)
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 12,
-                        color: Colors.black54,
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDateRow(
-      String startLabel, String endLabel, String startDate, String endDate) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    startLabel,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    startDate,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 10), // Platz zwischen den beiden Containern
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    endLabel,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    endDate,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildParticipantItem(String name, {Function()? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: onTap != null
-              ? const Color.fromARGB(255, 188, 180, 133).withOpacity(0.3)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              name,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.white,
-                decoration: TextDecoration.none,
-              ),
-            ),
-            if (onTap != null)
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 12,
-                color: Colors.black54,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildParticipantSection(int currentParticipants, int maxParticipants,
-      List<dynamic> participants, bool isEmployer) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        const Text(
-          'Teilnehmer:',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          '$currentParticipants von $maxParticipants Teilnehmern',
-          style: const TextStyle(fontSize: 16, color: Colors.white),
-        ),
-        const SizedBox(height: 10),
-        ...participants.map((participant) {
-          return Column(
-            children: [
-              _buildParticipantItem(
-                participant['displayName'],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UserProfileScreen(
-                        userId: participant['uid'],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 10), // Abstand zwischen den Teilnehmern
-            ],
-          );
-        }).toList(),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(
-      BuildContext context, String text, Function(BuildContext) onPressed) {
-    return ElevatedButton(
-      onPressed: () => onPressed(context),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color.fromARGB(255, 188, 180, 133),
-        padding: const EdgeInsets.symmetric(horizontal: 100.0, vertical: 12.0),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: Colors.black),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
@@ -348,13 +130,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     List<dynamic> participants = widget.auftrag['assignedUsers'] ?? [];
     User? currentUser = FirebaseAuth.instance.currentUser;
     bool isEmployer = currentUser?.uid == widget.auftrag['userId'];
-
-    // Formatieren des Datums
-    String formatDate(Timestamp? timestamp) {
-      if (timestamp == null) return 'Nicht verfügbar';
-      DateTime date = timestamp.toDate();
-      return '${date.day}.${date.month}.${date.year}';
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -366,34 +141,89 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
       ),
       backgroundColor: const Color(0xFF4B2F3E),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildDetailCard(
-              'Name',
-              widget.auftrag['name'] ?? '',
-              onTap: () {
-                if (widget.auftrag['userId'] != null &&
-                    widget.auftrag['userId'].isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => UserProfileScreen(
-                        userId: widget.auftrag['userId'],
-                      ),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Benutzerinformationen nicht verfügbar.'),
-                    ),
-                  );
-                }
-              },
+            const Text(
+              'Name:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            _buildDetailCard('Stadt', widget.auftrag['city'] ?? ''),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    if (widget.auftrag['userId'] != null &&
+                        widget.auftrag['userId'].isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(
+                            userId: widget.auftrag[
+                                'userId'], // Verwenden der `userId` des Auftraggebers
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('Benutzerinformationen nicht verfügbar.'),
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(
+                    widget.auftrag['name'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+                if (!isEmployer &&
+                    widget
+                        .isPastOrder) // Bewertungssymbol nur für Freelancer und vergangene Aufträge
+                  IconButton(
+                    icon: const Icon(Icons.rate_review, color: Colors.amber),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserRatingProfileScreen(
+                            userId: widget.auftrag[
+                                'userId'], // Bewertung des Arbeitgebers
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Stadt:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              widget.auftrag['city'] ?? '',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(height: 20),
             const Text(
               'Beschreibung:',
@@ -404,45 +234,100 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                widget.auftrag['description'] ?? '',
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
+            Text(
+              widget.auftrag['description'] ?? '',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 20),
-            _buildDateRow(
-              'Startdatum',
-              'Enddatum',
-              formatDate(widget.auftrag['startDate']),
-              formatDate(widget.auftrag['endDate']),
+            const Text(
+              'Teilnehmer:',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            const SizedBox(height: 20),
-            _buildParticipantSection(
-                currentParticipants, maxParticipants, participants, isEmployer),
+            const SizedBox(height: 10),
+            Text(
+              '$currentParticipants von $maxParticipants Teilnehmern',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Liste der Teilnehmer mit Bewertungs-Icon
+            ...participants.map((participant) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserProfileScreen(
+                            userId: participant['uid'],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      participant['displayName'],
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  if (isEmployer &&
+                      widget
+                          .isPastOrder) // Bewertungssymbol nur für Arbeitgeber und vergangene Aufträge
+                    IconButton(
+                      icon: const Icon(Icons.rate_review, color: Colors.amber),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserRatingProfileScreen(
+                              userId: participant[
+                                  'uid'], // Bewertung des Freelancers
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              );
+            }).toList(),
             const SizedBox(height: 20),
             if (!hasAcceptedThisJob &&
                 currentParticipants < maxParticipants &&
                 !widget.isPastOrder)
-              _buildActionButton(
-                  context, 'Auftrag übernehmen', _updateParticipants),
+              ElevatedButton(
+                onPressed: () {
+                  _updateParticipants(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 188, 180, 133),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 100.0, vertical: 12.0),
+                ),
+                child: const Text(
+                  'Auftrag übernehmen',
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
             if (widget.isPastOrder)
               const Text(
                 'Dieser Auftrag ist abgeschlossen.',
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 16,
-                ),
-              )
+                style: TextStyle(color: Colors.redAccent, fontSize: 16),
+              ),
           ],
         ),
       ),
