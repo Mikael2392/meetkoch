@@ -19,7 +19,7 @@ class _GalerieScreenState extends State<GalerieScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
 
-  // Bild auswählen und direkt hochladen
+  // Bild auswähleen und direkt hochladen
   Future<void> _pickAndUploadImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
 
