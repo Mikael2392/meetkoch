@@ -9,9 +9,9 @@ class VerlaufScreen extends StatelessWidget {
 
   // Funktion zum Abrufen des Profilbildes des Benutzers
   Future<Widget> _getUserProfileImage(String userId) async {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
     DocumentSnapshot userDoc =
-        await _firestore.collection('users').doc(userId).get();
+        await firestore.collection('users').doc(userId).get();
     String? userImage = userDoc['imageUrl'];
 
     return CircleAvatar(
@@ -54,17 +54,17 @@ class VerlaufScreen extends StatelessWidget {
 
     if (user == null) return;
 
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
     // Aktualisiere die Punktzahl des Benutzers in Firestore
-    await _firestore.collection('users').doc(user.uid).update({
+    await firestore.collection('users').doc(user.uid).update({
       'points': points,
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -89,7 +89,7 @@ class VerlaufScreen extends StatelessWidget {
             child: Row(
               children: [
                 FutureBuilder<QuerySnapshot>(
-                  future: _firestore
+                  future: firestore
                       .collection('auftraege')
                       .where('assignedUser', isEqualTo: user.uid)
                       .get(),
@@ -103,7 +103,7 @@ class VerlaufScreen extends StatelessWidget {
 
                     // Abfrage für Aufträge des Arbeitgebers
                     return FutureBuilder<QuerySnapshot>(
-                      future: _firestore
+                      future: firestore
                           .collection('auftraege')
                           .where('userId', isEqualTo: user.uid)
                           .get(),
@@ -142,7 +142,7 @@ class VerlaufScreen extends StatelessWidget {
       ),
       backgroundColor: const Color(0xFF4B2F3E),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
+        stream: firestore
             .collection('auftraege')
             .where('userId', isEqualTo: user.uid) // Abfrage für den Arbeitgeber
             .snapshots(),
@@ -156,7 +156,7 @@ class VerlaufScreen extends StatelessWidget {
 
           // Abfrage für Freelancer-Aufträge
           return StreamBuilder<QuerySnapshot>(
-            stream: _firestore
+            stream: firestore
                 .collection('auftraege')
                 .where('assignedUser',
                     isEqualTo: user.uid) // Abfrage für Freelancer

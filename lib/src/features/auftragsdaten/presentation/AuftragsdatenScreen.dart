@@ -30,9 +30,9 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
   Future<void> _checkIfUserHasAcceptedThisJob() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-      final DocumentSnapshot result = await _firestore
+      final DocumentSnapshot result = await firestore
           .collection('auftraege')
           .doc(widget.auftrag['id'])
           .get();
@@ -51,7 +51,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
   }
 
   Future<void> _updateParticipants(BuildContext context) async {
-    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
@@ -64,7 +64,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     }
 
     // Abrufen des Benutzerdokuments aus Firestore
-    final userDoc = await _firestore.collection('users').doc(user.uid).get();
+    final userDoc = await firestore.collection('users').doc(user.uid).get();
     String displayName = 'Anonymer Benutzer'; // Standardwert
 
     if (userDoc.exists) {
@@ -78,10 +78,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     if (currentParticipants < maxParticipants) {
       currentParticipants++;
 
-      await _firestore
-          .collection('auftraege')
-          .doc(widget.auftrag['id'])
-          .update({
+      await firestore.collection('auftraege').doc(widget.auftrag['id']).update({
         'currentParticipants': currentParticipants,
         'assignedUser': user.uid, // Beibehaltung der bestehenden Logik
         'assignedUsers': FieldValue.arrayUnion([
@@ -93,7 +90,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
       });
 
       if (currentParticipants == maxParticipants) {
-        await _firestore
+        await firestore
             .collection('auftraege')
             .doc(widget.auftrag['id'])
             .update({
@@ -304,7 +301,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
                     ),
                 ],
               );
-            }).toList(),
+            }),
             const SizedBox(height: 20),
             if (!hasAcceptedThisJob &&
                 currentParticipants < maxParticipants &&

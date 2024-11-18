@@ -71,11 +71,17 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
             endDate = (auftrag['endDate'] as Timestamp).toDate();
           }
 
+          // Logik:
+          // - Zeige Aufträge, die aktiv sind: now ist zwischen startDate und endDate
+          // - Zeige Aufträge, die in der Zukunft starten: startDate > now
           if (startDate != null && endDate != null) {
             return DateTime.now().isAfter(startDate) &&
-                DateTime.now().isBefore(endDate.add(const Duration(days: 1)));
+                    DateTime.now()
+                        .isBefore(endDate.add(const Duration(days: 1))) ||
+                DateTime.now().isBefore(startDate);
           } else if (startDate != null) {
-            return DateTime.now().isAfter(startDate);
+            return DateTime.now().isBefore(startDate) ||
+                DateTime.now().isAfter(startDate);
           }
           return false;
         }).toList();
