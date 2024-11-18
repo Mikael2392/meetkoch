@@ -27,6 +27,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     _checkIfUserHasAcceptedThisJob();
   }
 
+  // Überprüfen, ob der Benutzer den Auftrag bereits angenommen hat
   Future<void> _checkIfUserHasAcceptedThisJob() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -50,6 +51,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     }
   }
 
+  // Auftrag übernehmen
   Future<void> _updateParticipants(BuildContext context) async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     User? user = FirebaseAuth.instance.currentUser;
@@ -63,9 +65,8 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
       return;
     }
 
-    // Abrufen des Benutzerdokuments aus Firestore
     final userDoc = await firestore.collection('users').doc(user.uid).get();
-    String displayName = 'Anonymer Benutzer'; // Standardwert
+    String displayName = 'Anonymer Benutzer';
 
     if (userDoc.exists) {
       final userData = userDoc.data() as Map<String, dynamic>;
@@ -80,7 +81,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
 
       await firestore.collection('auftraege').doc(widget.auftrag['id']).update({
         'currentParticipants': currentParticipants,
-        'assignedUser': user.uid, // Beibehaltung der bestehenden Logik
         'assignedUsers': FieldValue.arrayUnion([
           {
             'uid': user.uid,
@@ -89,32 +89,19 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
         ]),
       });
 
-      if (currentParticipants == maxParticipants) {
-        await firestore
-            .collection('auftraege')
-            .doc(widget.auftrag['id'])
-            .update({
-          'isVisible': false,
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-                'Maximale Teilnehmerzahl erreicht. Auftrag ist jetzt abgeschlossen!'),
-          ),
-        );
-        Navigator.pop(context);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Auftrag wurde angenommen!'),
-          ),
-        );
-        Navigator.pop(context);
-      }
+      setState(() {
+        hasAcceptedThisJob = true;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Auftrag wurde erfolgreich angenommen!'),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Maximale Teilnehmerzahl bereits erreicht!'),
+          content: Text('Maximale Teilnehmeranzahl wurde erreicht!'),
         ),
       );
     }
@@ -125,8 +112,17 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
     int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
     List<dynamic> participants = widget.auftrag['assignedUsers'] ?? [];
+    String employerId = widget.auftrag['userId'] ?? '';
+
     User? currentUser = FirebaseAuth.instance.currentUser;
-    bool isEmployer = currentUser?.uid == widget.auftrag['userId'];
+    bool isEmployer = currentUser?.uid == employerId;
+
+    DateTime? startDate = widget.auftrag['startDate'] != null
+        ? (widget.auftrag['startDate'] as Timestamp).toDate()
+        : null;
+    DateTime? endDate = widget.auftrag['endDate'] != null
+        ? (widget.auftrag['endDate'] as Timestamp).toDate()
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -142,86 +138,67 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Name:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+            // Arbeitgebername in Row
+            Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF4B2F3E),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    if (widget.auftrag['userId'] != null &&
-                        widget.auftrag['userId'].isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfileScreen(
-                            userId: widget.auftrag[
-                                'userId'], // Verwenden der `userId` des Auftraggebers
-                          ),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Benutzerinformationen nicht verfügbar.'),
-                        ),
-                      );
-                    }
-                  },
-                  child: Text(
-                    widget.auftrag['name'] ?? '',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      decoration: TextDecoration.underline,
-                    ),
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  FutureBuilder<Widget>(
+                    future: _getUserProfileImage(employerId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircleAvatar(
+                          radius: 30,
+                          backgroundImage:
+                              AssetImage('assets/icons/default.png'),
+                        );
+                      }
+                      return snapshot.data!;
+                    },
                   ),
-                ),
-                if (!isEmployer &&
-                    widget
-                        .isPastOrder) // Bewertungssymbol nur für Freelancer und vergangene Aufträge
-                  IconButton(
-                    icon: const Icon(Icons.rate_review, color: Colors.amber),
-                    onPressed: () {
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => UserRatingProfileScreen(
-                            userId: widget.auftrag[
-                                'userId'], // Bewertung des Arbeitgebers
-                          ),
+                          builder: (context) =>
+                              UserProfileScreen(userId: employerId),
                         ),
                       );
                     },
+                    child: Text(
+                      widget.auftrag['name'] ?? 'Kein Name',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Stadt mit Icon
+            Row(
+              children: [
+                const Icon(Icons.location_city, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Text(
+                  widget.auftrag['city'] ?? 'Keine Stadt angegeben',
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ],
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Stadt:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              widget.auftrag['city'] ?? '',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
+
+            // Beschreibung
             const Text(
               'Beschreibung:',
               style: TextStyle(
@@ -231,78 +208,105 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              widget.auftrag['description'] ?? '',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4B2F3E),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                widget.auftrag['description'] ?? '',
+                style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Teilnehmer:',
-              style: TextStyle(
+
+            // Start- und Enddatum
+            if (startDate != null)
+              Text(
+                'Startdatum: ${startDate.toString().split(' ')[0]}',
+                style: const TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            if (endDate != null)
+              Text(
+                'Enddatum: ${endDate.toString().split(' ')[0]}',
+                style: const TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            const SizedBox(height: 20),
+
+            // Teilnehmeranzeige
+            Text(
+              'Teilnehmer: $currentParticipants von $maxParticipants',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              '$currentParticipants von $maxParticipants Teilnehmern',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 10),
 
-            // Liste der Teilnehmer mit Bewertungs-Icon
-            ...participants.map((participant) {
-              return Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserProfileScreen(
-                            userId: participant['uid'],
-                          ),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      participant['displayName'],
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        decoration: TextDecoration.underline,
-                      ),
+            // Teilnehmerliste mit Bild und Bewertung
+            Wrap(
+              spacing: 8.0,
+              children: participants.map((participant) {
+                return Column(
+                  children: [
+                    FutureBuilder<Widget>(
+                      future: _getUserProfileImage(participant['uid']),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircleAvatar(
+                            radius: 20,
+                            backgroundImage:
+                                AssetImage('assets/icons/default.png'),
+                          );
+                        }
+                        return snapshot.data!;
+                      },
                     ),
-                  ),
-                  if (isEmployer &&
-                      widget
-                          .isPastOrder) // Bewertungssymbol nur für Arbeitgeber und vergangene Aufträge
-                    IconButton(
-                      icon: const Icon(Icons.rate_review, color: Colors.amber),
-                      onPressed: () {
+                    const SizedBox(height: 5),
+                    GestureDetector(
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => UserRatingProfileScreen(
-                              userId: participant[
-                                  'uid'], // Bewertung des Freelancers
-                            ),
+                            builder: (context) =>
+                                UserProfileScreen(userId: participant['uid']),
                           ),
                         );
                       },
+                      child: Text(
+                        participant['displayName'] ?? 'Unbekannt',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
-                ],
-              );
-            }),
+                    if (widget.isPastOrder && isEmployer)
+                      IconButton(
+                        icon:
+                            const Icon(Icons.rate_review, color: Colors.amber),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserRatingProfileScreen(
+                                userId: participant['uid'],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                );
+              }).toList(),
+            ),
             const SizedBox(height: 20),
+
+            // Auftrag übernehmen-Button
             if (!hasAcceptedThisJob &&
                 currentParticipants < maxParticipants &&
                 !widget.isPastOrder)
@@ -320,14 +324,46 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
                   style: TextStyle(color: Colors.black),
                 ),
               ),
+
+            // Meldung für abgeschlossene Aufträge
             if (widget.isPastOrder)
               const Text(
                 'Dieser Auftrag ist abgeschlossen.',
                 style: TextStyle(color: Colors.redAccent, fontSize: 16),
               ),
+
+            // Bewertungsbutton für den Arbeitgeber
+            if (widget.isPastOrder && !isEmployer)
+              IconButton(
+                icon: const Icon(Icons.rate_review, color: Colors.amber),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserRatingProfileScreen(
+                        userId: employerId,
+                      ),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  // Funktion zum Abrufen des Profilbildes eines Benutzers
+  Future<Widget> _getUserProfileImage(String userId) async {
+    final DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    String? userImage = userDoc['imageUrl'];
+
+    return CircleAvatar(
+      radius: 30,
+      backgroundImage: userImage != null && userImage.isNotEmpty
+          ? NetworkImage(userImage)
+          : const AssetImage('assets/icons/default.png') as ImageProvider,
     );
   }
 }

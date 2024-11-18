@@ -69,7 +69,7 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
         var userData = userDoc.data() as Map<String, dynamic>;
         // Setze den Benutzernamen im Textfeld
         setState(() {
-          nameController.text = userData['vorname'] ?? '';
+          nameController.text = userData['firma'] ?? '';
         });
       }
     }

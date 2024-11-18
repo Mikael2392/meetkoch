@@ -83,235 +83,149 @@ class _SettingScreenState extends State<SettingScreen> {
             ],
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Benutzerprofil-Container
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD2D4C8),
-                  borderRadius: BorderRadius.circular(10.0),
-                ),
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundImage: _profileImage != null
-                          ? NetworkImage(_profileImage!)
-                          : const AssetImage('assets/icons/default.png')
-                              as ImageProvider,
-                    ),
-                    const SizedBox(width: 16),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$_firstName $_lastName',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4B2F3E),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _email,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF4B2F3E),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _number,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF4B2F3E),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
 
-              // Account bearbeiten Button
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const EditProfileScreen(),
-                    ),
-                  ).then((_) {
-                    _loadUserDataFromFirestore(); // Benutzerdaten nach Bearbeitung neu laden
-                  });
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD2D4C8),
-                    borderRadius: BorderRadius.circular(10.0),
+            // Profilcontainer
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundImage: _profileImage != null
+                        ? NetworkImage(_profileImage!)
+                        : const AssetImage('assets/icons/default.png')
+                            as ImageProvider,
                   ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: const Row(
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.account_circle,
-                        color: Color(0xFF4B2F3E),
-                      ),
-                      SizedBox(width: 16),
                       Text(
-                        'Account bearbeiten',
-                        style: TextStyle(
-                          fontSize: 18,
+                        '$_firstName $_lastName',
+                        style: const TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B2F3E),
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _email,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _number,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
                         ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // Galerie Button
-              GestureDetector(
-                onTap: () {
-                  // Hier kannst du die Funktion für den Zugriff auf die Galerie implementieren
-                  Navigator.push(
+            // Grid Cards
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildCard(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const GalerieScreen(
-                        userId: '',
-                      ), // Hier musst du die VerlaufScreen definieren
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD2D4C8),
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.photo_library, // Icon für Galerie
-                        color: Color(0xFF4B2F3E),
-                      ),
-                      SizedBox(width: 16),
-                      Text(
-                        'Galerie', // Text für den Button
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B2F3E),
+                    icon: Icons.account_circle,
+                    title: 'Account bearbeiten',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfileScreen(),
                         ),
-                      ),
-                    ],
+                      ).then((_) => _loadUserDataFromFirestore());
+                    },
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Verlauf (Vergangene Aufträge) Button
-              GestureDetector(
-                onTap: () {
-                  // Navigation zu vergangene Aufträge (du kannst hier deine eigene Route einfügen)
-                  Navigator.push(
+                  _buildCard(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const VerlaufScreen(), // Hier musst du die VerlaufScreen definieren
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD2D4C8),
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.history,
-                        color: Color(0xFF4B2F3E),
-                      ),
-                      SizedBox(width: 16),
-                      Text(
-                        'Vergangene Aufträge',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B2F3E),
+                    icon: Icons.photo_library,
+                    title: 'Galerie',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GalerieScreen(userId: ''),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Bewertungen Button
-              GestureDetector(
-                onTap: () {
-                  // Navigation zu Bewertungen (du kannst hier deine eigene Route einfügen)
-                  Navigator.push(
+                  _buildCard(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const UserReviewScreen(), // Hier musst du die BewertungenScreen definieren
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD2D4C8),
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        color: Color(0xFF4B2F3E),
-                      ),
-                      SizedBox(width: 16),
-                      Text(
-                        'Bewertungen',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B2F3E),
+                    icon: Icons.history,
+                    title: 'Vergangene Aufträge',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VerlaufScreen(),
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
+                  _buildCard(
+                    context,
+                    icon: Icons.star,
+                    title: 'Bewertungen',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const UserReviewScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+            ),
+            const SizedBox(height: 16),
 
-              // Abmelden Button
-              GestureDetector(
+            // Abmelden Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: GestureDetector(
                 onTap: _signOut,
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFD2D4C8),
-                    borderRadius: BorderRadius.circular(10.0),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   padding: const EdgeInsets.all(16.0),
-                  child: const Row(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.logout,
                         color: Color(0xFF4B2F3E),
                       ),
-                      SizedBox(width: 16),
-                      Text(
+                      const SizedBox(width: 16),
+                      const Text(
                         'Abmelden',
                         style: TextStyle(
                           fontSize: 18,
@@ -323,8 +237,50 @@ class _SettingScreenState extends State<SettingScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(
+              height: 20,
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context,
+      {required IconData icon,
+      required String title,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFD2D4C8),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: const Color(0xFF4B2F3E)),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4B2F3E),
+              ),
+            ),
+          ],
         ),
       ),
     );

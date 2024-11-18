@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:meetkoch/src/features/BewertungenScreen/UserReviewsScreen.dart';
+import 'package:meetkoch/src/features/User%20profil/GalleryScreen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userId;
@@ -224,75 +225,6 @@ class UserProfileScreen extends StatelessWidget {
               ),
             );
           }
-        },
-      ),
-    );
-  }
-}
-
-class GalleryScreen extends StatelessWidget {
-  final String userId;
-
-  const GalleryScreen({super.key, required this.userId});
-
-  Future<List<Map<String, dynamic>>> _getUserGallery() async {
-    final QuerySnapshot gallerySnapshot = await FirebaseFirestore.instance
-        .collection('galerie')
-        .where('userId', isEqualTo: userId)
-        .get();
-
-    return gallerySnapshot.docs
-        .map((doc) => doc.data() as Map<String, dynamic>)
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Galerie', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF4B2F3E),
-      ),
-      backgroundColor: const Color(0xFF4B2F3E),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _getUserGallery(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(
-                child: Text('Galerie konnte nicht geladen werden.'));
-          }
-
-          final galleryItems = snapshot.data!;
-          if (galleryItems.isEmpty) {
-            return const Center(
-              child: Text('Keine Bilder in der Galerie vorhanden.',
-                  style: TextStyle(color: Colors.white)),
-            );
-          }
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(10),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: galleryItems.length,
-            itemBuilder: (context, index) {
-              final item = galleryItems[index];
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(15),
-                  image: DecorationImage(
-                    image: NetworkImage(item['imageUrl']),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              );
-            },
-          );
         },
       ),
     );
