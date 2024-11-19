@@ -52,7 +52,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _saveProfileData() async {
     setState(() {
-      _isLoading = true; // Ladezustand aktivieren
+      _isLoading = true;
     });
 
     User? user = FirebaseAuth.instance.currentUser;
@@ -60,38 +60,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (user != null) {
       if (_image != null) {
         try {
-          // Bild in Firebase Storage hochladen
           FirebaseStorage storage = FirebaseStorage.instance;
           Reference ref =
               storage.ref().child('user_images').child('${user.uid}.jpg');
 
-          // Bild hochladen
           UploadTask uploadTask = ref.putFile(_image!);
 
-          // Warte auf Abschluss des Uploads
           TaskSnapshot snapshot = await uploadTask;
-          print(
-              'Upload erfolgreich: ${snapshot.bytesTransferred} Bytes hochgeladen.');
 
-          // URL abrufen
           String downloadUrl = await snapshot.ref.getDownloadURL();
-          print('Bild-URL: $downloadUrl');
 
           setState(() {
-            imageUrl = downloadUrl; // URL setzen
+            imageUrl = downloadUrl;
           });
 
-          // URL in Firestore speichern
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
-              .update({
-            'imageUrl': imageUrl,
-          });
-
-          print('Bild-URL erfolgreich in Firestore gespeichert.');
+              .update({'imageUrl': imageUrl});
         } catch (e) {
-          print('Fehler beim Hochladen des Bildes: $e');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Fehler beim Hochladen des Bildes: $e')),
           );
@@ -102,7 +89,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
       }
 
-      // Speichere die anderen Benutzerdaten in Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -111,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'nachname': _lastNameController.text,
         'email': _emailController.text,
         'telefon': _numberController.text,
-        if (imageUrl != null) 'imageUrl': imageUrl, // Bild-URL speichern
+        if (imageUrl != null) 'imageUrl': imageUrl,
       });
 
       setState(() {
@@ -131,12 +117,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      print('Bild ausgewählt: ${pickedFile.path}');
       setState(() {
         _image = File(pickedFile.path);
       });
-    } else {
-      print('Kein Bild ausgewählt.');
     }
   }
 
@@ -148,8 +131,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
-            .delete(); // Benutzerdaten löschen
-        await user.delete(); // Firebase-Benutzer löschen
+            .delete();
+        await user.delete();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Konto erfolgreich gelöscht!')),
         );
@@ -173,14 +156,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Dialog schließen
+                Navigator.of(context).pop();
               },
               child: const Text('Abbrechen'),
             ),
             TextButton(
               onPressed: () {
-                _deleteAccount(); // Konto löschen
-                Navigator.of(context).pop(); // Dialog schließen
+                _deleteAccount();
+                Navigator.of(context).pop();
               },
               child: const Text('Ja, löschen'),
             ),
@@ -197,11 +180,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text(
           'Edit Profile',
           style: TextStyle(
-            color: Color.fromARGB(255, 248, 248, 248),
+            color: Colors.white,
           ),
         ),
         backgroundColor: const Color(0xFF4B2F3E),
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -215,37 +198,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            if (_isLoading) const CircularProgressIndicator(), // Ladeindikator
-            if (!_isLoading)
-              Column(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
                 children: [
                   Row(
                     children: [
                       CircleAvatar(
                         radius: 40,
                         backgroundImage: _image != null
-                            ? FileImage(
-                                _image!) // Lokales Bild aus dem ImagePicker
+                            ? FileImage(_image!)
                             : (imageUrl != null
-                                ? NetworkImage(imageUrl!)
-                                    as ImageProvider // Falls Bild-URL vorhanden ist
-                                : AssetImage(
-                                    'assets/icons/default.png')), // Fallback: Default-Bild aus Assets
+                                ? NetworkImage(imageUrl!) as ImageProvider
+                                : const AssetImage('assets/icons/default.png')),
                         child: _image == null && imageUrl == null
-                            ? const Icon(Icons.person,
-                                size:
-                                    40) // Standard-Icon anzeigen, wenn kein Bild verfügbar ist
+                            ? const Icon(Icons.person, size: 40)
                             : null,
                       ),
                       const SizedBox(width: 20),
                       ElevatedButton(
                         onPressed: _pickImage,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4B2F3E),
+                          backgroundColor: const Color(0xFFB16F92),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 15),
                         ),
-                        child: const Text('Bild auswählen'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.image, color: Colors.white),
+                            SizedBox(width: 10),
+                            Text('Bild auswählen',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 16)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -270,7 +260,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   const SizedBox(height: 20),
                   TextFormField(
                     controller: _emailController,
-                    readOnly: true, // E-Mail nicht änderbar
+                    readOnly: true,
                     decoration: const InputDecoration(
                       labelText: 'E-Mail',
                       filled: true,
@@ -290,36 +280,50 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ElevatedButton(
                     onPressed: _saveProfileData,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4B2F3E),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 15,
+                      backgroundColor: const Color(0xFFB16F92),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 15),
                     ),
-                    child: const Text(
-                      'Speichern',
-                      style: TextStyle(fontSize: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.save, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text(
+                          'Speichern',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: _showDeleteAccountDialog,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4B2F3E),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                        vertical: 15,
+                      backgroundColor: const Color(0xFFB16F92),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 50, vertical: 15),
                     ),
-                    child: const Text(
-                      'Konto löschen',
-                      style: TextStyle(fontSize: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.delete_forever, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text(
+                          'Konto löschen',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-          ],
-        ),
       ),
     );
   }

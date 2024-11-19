@@ -95,7 +95,6 @@ class VerlaufScreen extends StatelessWidget {
                       .get(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
-                      print('Keine Daten von Firestore erhalten');
                       return const SizedBox.shrink();
                     }
 
@@ -109,7 +108,6 @@ class VerlaufScreen extends StatelessWidget {
                           .get(),
                       builder: (context, snapshotEmployer) {
                         if (!snapshotEmployer.hasData) {
-                          print('Keine Daten von Firestore erhalten');
                           return const SizedBox.shrink();
                         }
 
@@ -141,148 +139,153 @@ class VerlaufScreen extends StatelessWidget {
         ],
       ),
       backgroundColor: const Color(0xFF4B2F3E),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: firestore
-            .collection('auftraege')
-            .where('userId', isEqualTo: user.uid) // Abfrage für den Arbeitgeber
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            print('Keine Daten von Firestore erhalten');
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          // Flexible Liste der vergangenen Aufträge
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: firestore
+                  .collection('auftraege')
+                  .where('userId', isEqualTo: user.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          var auftraegeVonArbeitsgeber = snapshot.data!.docs;
+                var auftraegeVonArbeitsgeber = snapshot.data!.docs;
 
-          // Abfrage für Freelancer-Aufträge
-          return StreamBuilder<QuerySnapshot>(
-            stream: firestore
-                .collection('auftraege')
-                .where('assignedUser',
-                    isEqualTo: user.uid) // Abfrage für Freelancer
-                .snapshots(),
-            builder: (context, snapshotFreelancer) {
-              if (!snapshotFreelancer.hasData) {
-                print('Keine Daten von Firestore erhalten');
-                return const Center(child: CircularProgressIndicator());
-              }
+                // Abfrage für Freelancer-Aufträge
+                return StreamBuilder<QuerySnapshot>(
+                  stream: firestore
+                      .collection('auftraege')
+                      .where('assignedUser', isEqualTo: user.uid)
+                      .snapshots(),
+                  builder: (context, snapshotFreelancer) {
+                    if (!snapshotFreelancer.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-              var auftraegeFreelancer = snapshotFreelancer.data!.docs;
-              var auftraege = [
-                ...auftraegeVonArbeitsgeber,
-                ...auftraegeFreelancer,
-              ];
+                    var auftraegeFreelancer = snapshotFreelancer.data!.docs;
+                    var auftraege = [
+                      ...auftraegeVonArbeitsgeber,
+                      ...auftraegeFreelancer,
+                    ];
 
-              print('Erhaltene Aufträge: ${auftraege.length}');
-
-              if (auftraege.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'Kein Verlauf verfügbar',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                );
-              }
-
-              return ListView.separated(
-                itemCount: auftraege.length,
-                separatorBuilder: (context, index) => Divider(
-                  color: Colors.grey[300],
-                  thickness: 1,
-                  height: 1,
-                ),
-                itemBuilder: (context, index) {
-                  var auftrag = auftraege[index];
-
-                  DateTime? startDate;
-                  if (auftrag['startDate'] != null) {
-                    startDate = (auftrag['startDate'] as Timestamp).toDate();
-                  }
-
-                  return FutureBuilder<Widget>(
-                    future: _getUserProfileImage(auftrag['userId']),
-                    builder: (context, profileImageSnapshot) {
-                      if (profileImageSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      }
-
-                      return ListTile(
-                        leading: profileImageSnapshot.hasData
-                            ? profileImageSnapshot.data!
-                            : const CircleAvatar(
-                                radius: 30,
-                                backgroundImage:
-                                    AssetImage('assets/icons/default.png')),
-                        title: Text(auftrag['name'] ?? 'Kein Name'),
-                        tileColor: const Color.fromARGB(255, 206, 157, 183),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(auftrag['city'] ?? 'Unbekannte Stadt'),
-                            if (startDate != null)
-                              Text(
-                                'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
-                              ),
-                          ],
+                    if (auftraege.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'Kein Verlauf verfügbar',
+                          style: TextStyle(color: Colors.white),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        isThreeLine: true,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AuftragDetailScreen(
-                                auftrag: auftrag.data() as Map<String, dynamic>,
-                                isPastOrder: true,
-                              ),
-                            ),
-                          );
-                        },
                       );
-                    },
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Container(
-          padding: const EdgeInsets.all(16.0),
-          margin: const EdgeInsets.all(8.0),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 206, 157, 183),
-            borderRadius: BorderRadius.circular(16.0),
+                    }
+
+                    return ListView.separated(
+                      itemCount: auftraege.length,
+                      separatorBuilder: (context, index) => Divider(
+                        color: Colors.grey[300],
+                        thickness: 1,
+                        height: 1,
+                      ),
+                      itemBuilder: (context, index) {
+                        var auftrag = auftraege[index];
+
+                        DateTime? startDate;
+                        if (auftrag['startDate'] != null) {
+                          startDate =
+                              (auftrag['startDate'] as Timestamp).toDate();
+                        }
+
+                        return FutureBuilder<Widget>(
+                          future: _getUserProfileImage(auftrag['userId']),
+                          builder: (context, profileImageSnapshot) {
+                            if (profileImageSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const CircularProgressIndicator();
+                            }
+
+                            return ListTile(
+                              leading: profileImageSnapshot.hasData
+                                  ? profileImageSnapshot.data!
+                                  : const CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: AssetImage(
+                                          'assets/icons/default.png')),
+                              title: Text(auftrag['name'] ?? 'Kein Name'),
+                              tileColor:
+                                  const Color.fromARGB(255, 206, 157, 183),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(auftrag['city'] ?? 'Unbekannte Stadt'),
+                                  if (startDate != null)
+                                    Text(
+                                      'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                                    ),
+                                ],
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios),
+                              isThreeLine: true,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => AuftragDetailScreen(
+                                      auftrag: auftrag.data()
+                                          as Map<String, dynamic>,
+                                      isPastOrder: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Legende:',
-                style: TextStyle(
-                    color: Color.fromARGB(255, 9, 0, 0),
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
+          // Legende-Bereich
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              margin: const EdgeInsets.all(8.0),
+              decoration: BoxDecoration(
+                color: const Color.fromARGB(255, 170, 116, 146),
+                borderRadius: BorderRadius.circular(16.0),
               ),
-              const SizedBox(height: 8.0),
-              const Text(
-                'Legende:\n'
-                '• 1 Kochlöffel = 10 Punkte\n'
-                '• 1 Pfanne = 5 Kochlöffel (50 Punkte)\n'
-                '• 1 Flamme = 5 Pfannen (250 Punkte)\n',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color.fromARGB(255, 16, 16, 16),
-                  fontSize: 16,
-                  height: 1.5,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Legende:',
+                    style: TextStyle(
+                        color: Color.fromARGB(255, 9, 0, 0),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8.0),
+                  const Text(
+                    '• 1 Kochlöffel = 10 Punkte\n'
+                    '• 1 Pfanne = 5 Kochlöffel (50 Punkte)\n'
+                    '• 1 Flamme = 5 Pfannen (250 Punkte)\n',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 16, 16, 16),
+                      fontSize: 16,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
