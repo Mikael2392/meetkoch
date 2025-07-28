@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // Für die Datumsausgabe
+import 'package:intl/intl.dart';
 import 'package:meetkoch/src/features/Neuer_Auftrag/presentation/auftrag_formular.dart';
 
 class ArbeitsgeberAuftragListe extends StatefulWidget {
@@ -19,34 +19,26 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
   @override
   void initState() {
     super.initState();
-    _loadCurrentAuftraege(); // Lädt nur die Aufträge des aktuellen Arbeitsgebers
+    _loadCurrentAuftraege();
   }
 
-  // Methode zum Hinzufügen eines neuen Auftrags und Speichern in Firestore
   Future<void> _addAuftrag(Map<String, dynamic> neuerAuftrag) async {
     User? currentUser = _auth.currentUser;
 
     if (currentUser != null) {
-      neuerAuftrag['isFromCurrentUser'] =
-          true; // Markiere Auftrag als vom aktuellen User
-      neuerAuftrag['userId'] =
-          currentUser.uid; // Speichere die Benutzer-ID (Arbeitsgeber)
+      neuerAuftrag['isFromCurrentUser'] = true;
+      neuerAuftrag['userId'] = currentUser.uid;
 
-      await _firestore
-          .collection('auftraege')
-          .add(neuerAuftrag); // Speichern in Firestore
-
-      _loadCurrentAuftraege(); // Nach dem Speichern die Aufträge erneut laden
+      await _firestore.collection('auftraege').add(neuerAuftrag);
+      _loadCurrentAuftraege();
     }
   }
 
-  // Methode zum Löschen eines Auftrags aus Firestore
   Future<void> _deleteAuftrag(String documentId) async {
     await _firestore.collection('auftraege').doc(documentId).delete();
-    _loadCurrentAuftraege(); // Nach dem Löschen die Aufträge erneut laden
+    _loadCurrentAuftraege();
   }
 
-  // Lädt die gespeicherten Aufträge, die vom aktuellen Arbeitgeber (Benutzer) erstellt wurden, aus Firestore
   Future<void> _loadCurrentAuftraege() async {
     User? currentUser = _auth.currentUser;
 
@@ -57,7 +49,6 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
           .get();
 
       setState(() {
-        // Filter: Nur Aufträge anzeigen, die aktuell aktiv sind (zwischen startDate und endDate)
         currentAuftraege = snapshot.docs.map((doc) {
           return {'id': doc.id, ...doc.data() as Map<String, dynamic>};
         }).where((auftrag) {
@@ -71,9 +62,6 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
             endDate = (auftrag['endDate'] as Timestamp).toDate();
           }
 
-          // Logik:
-          // - Zeige Aufträge, die aktiv sind: now ist zwischen startDate und endDate
-          // - Zeige Aufträge, die in der Zukunft starten: startDate > now
           if (startDate != null && endDate != null) {
             return DateTime.now().isAfter(startDate) &&
                     DateTime.now()
@@ -89,7 +77,6 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
     }
   }
 
-  // Methode zum Abrufen des Profilbildes des Benutzers
   Future<Widget> _getUserProfileImage(String userId) async {
     DocumentSnapshot userDoc =
         await _firestore.collection('users').doc(userId).get();
@@ -99,8 +86,7 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
       radius: 30,
       backgroundImage: userImage != null && userImage.isNotEmpty
           ? NetworkImage(userImage)
-          : const AssetImage('assets/icons/default.png')
-              as ImageProvider, // Standardbild
+          : const AssetImage('assets/icons/default.png') as ImageProvider,
     );
   }
 
@@ -108,10 +94,8 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Meine Aufträge',
-          style: TextStyle(color: Colors.white),
-        ),
+        title:
+            const Text('Meine Aufträge', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4B2F3E),
       ),
       backgroundColor: const Color(0xFF4B2F3E),
@@ -122,9 +106,8 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => NeuerAuftragScreen(
-                        onSave: _addAuftrag,
-                      ),
+                      builder: (context) =>
+                          NeuerAuftragScreen(onSave: _addAuftrag),
                     ),
                   );
                 },
@@ -134,85 +117,86 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                 ),
               ),
             )
-          : ListView.separated(
+          : ListView.builder(
               itemCount: currentAuftraege.length,
-              separatorBuilder: (context, index) => Divider(
-                color: Colors.grey[300],
-                thickness: 1,
-                height: 1,
-              ),
               itemBuilder: (context, index) {
-                int currentParticipants =
-                    currentAuftraege[index]["currentParticipants"] ?? 0;
-                int maxParticipants =
-                    currentAuftraege[index]["maxParticipants"] ?? 0;
-
-                // Zugriff auf das Datum, wenn vorhanden
+                final auftrag = currentAuftraege[index];
+                final currentParticipants = auftrag["currentParticipants"] ?? 0;
+                final maxParticipants = auftrag["maxParticipants"] ?? 0;
                 DateTime? startDate;
-                if (currentAuftraege[index]['startDate'] != null) {
-                  startDate =
-                      (currentAuftraege[index]['startDate'] as Timestamp)
-                          .toDate();
+                if (auftrag['startDate'] != null) {
+                  startDate = (auftrag['startDate'] as Timestamp).toDate();
                 }
 
-                return ListTile(
-                  leading: FutureBuilder<Widget>(
-                    future:
-                        _getUserProfileImage(currentAuftraege[index]['userId']),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      }
-                      if (snapshot.hasData) {
-                        return snapshot.data!;
-                      } else {
-                        return const CircleAvatar(
-                          radius: 30,
-                          backgroundImage: AssetImage(
-                              'assets/icons/default.png'), // Standardbild
+                return Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Card(
+                    color: const Color.fromARGB(255, 206, 157, 183),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(12),
+                      leading: FutureBuilder<Widget>(
+                        future: _getUserProfileImage(auftrag['userId']),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          }
+                          if (snapshot.hasData) {
+                            return snapshot.data!;
+                          }
+                          return const CircleAvatar(
+                            radius: 30,
+                            backgroundImage:
+                                AssetImage('assets/icons/default.png'),
+                          );
+                        },
+                      ),
+                      title: Text(
+                        auftrag["name"] ?? 'Kein Titel',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(auftrag["city"] ?? ''),
+                          if (startDate != null)
+                            Text(
+                                'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}'),
+                          const SizedBox(height: 4),
+                          Text(
+                            "$currentParticipants von $maxParticipants Teilnehmern",
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NeuerAuftragScreen(
+                              auftrag: auftrag,
+                              onSave: (updatedAuftrag) async {
+                                await _firestore
+                                    .collection('auftraege')
+                                    .doc(auftrag['id'])
+                                    .update(updatedAuftrag);
+                                _loadCurrentAuftraege();
+                              },
+                              onDelete: () {
+                                _deleteAuftrag(auftrag['id']);
+                              },
+                            ),
+                          ),
                         );
-                      }
-                    },
+                      },
+                    ),
                   ),
-                  title: Text(currentAuftraege[index]["name"] as String),
-                  tileColor: const Color.fromARGB(255, 206, 157, 183),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(currentAuftraege[index]["city"] as String),
-                      // Datum anzeigen, wenn vorhanden
-                      if (startDate != null)
-                        Text(
-                          'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
-                        ),
-                      Text(
-                        "$currentParticipants von $maxParticipants Teilnehmern",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  isThreeLine: true,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NeuerAuftragScreen(
-                          auftrag: currentAuftraege[index],
-                          onSave: (updatedAuftrag) async {
-                            await _firestore
-                                .collection('auftraege')
-                                .doc(currentAuftraege[index]['id'])
-                                .update(updatedAuftrag);
-                            _loadCurrentAuftraege(); // Aktualisierte Aufträge laden
-                          },
-                          onDelete: () {
-                            _deleteAuftrag(currentAuftraege[index]['id']);
-                          },
-                        ),
-                      ),
-                    );
-                  },
                 );
               },
             ),
@@ -221,9 +205,7 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => NeuerAuftragScreen(
-                onSave: _addAuftrag,
-              ),
+              builder: (context) => NeuerAuftragScreen(onSave: _addAuftrag),
             ),
           );
         },

@@ -11,7 +11,7 @@ class LikeProvider with ChangeNotifier {
 
     // Likes vom Firestore holen
     final docSnapshot = await docRef.get();
-    final data = docSnapshot.data() as Map<String, dynamic>?;
+    final data = docSnapshot.data();
     final List<String> currentLikes = List<String>.from(data?['likes'] ?? []);
 
     // Like hinzufügen oder entfernen
@@ -38,7 +38,7 @@ class LikeProvider with ChangeNotifier {
 
     final docRef = FirebaseFirestore.instance.collection('galerie').doc(docId);
     final docSnapshot = await docRef.get();
-    final data = docSnapshot.data() as Map<String, dynamic>?;
+    final data = docSnapshot.data();
     final List<String> fetchedLikes = List<String>.from(data?['likes'] ?? []);
 
     _likes[docId] = fetchedLikes;

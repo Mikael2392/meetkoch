@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Für die Datumsausgabe
+import 'package:intl/intl.dart';
 import 'package:meetkoch/src/features/auftragsdaten/presentation/AuftragsdatenScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,16 +17,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserData(); // Benutzerinformationen laden
+    _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       DocumentSnapshot userDoc =
           await _firestore.collection('users').doc(user.uid).get();
-
       if (userDoc.exists) {
         var userData = userDoc.data();
         print("Benutzerinformationen: $userData");
@@ -36,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Methode zum Abrufen des Profilbildes des Benutzers
   Future<Widget> _getUserProfileImage(String userId) async {
     DocumentSnapshot userDoc =
         await _firestore.collection('users').doc(userId).get();
@@ -46,8 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       radius: 30,
       backgroundImage: userImage != null && userImage.isNotEmpty
           ? NetworkImage(userImage)
-          : const AssetImage('assets/icons/default.png')
-              as ImageProvider, // Standardbild
+          : const AssetImage('assets/icons/default.png') as ImageProvider,
     );
   }
 
@@ -65,16 +61,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('auftraege')
-            .where('endDate',
-                isGreaterThan: Timestamp.now()) // Nur aktive Aufträge
-            .orderBy('endDate',
-                descending: true) // Sortieren nach dem neuesten Enddatum
-            .snapshots(), // Stream für die 'auftraege'-Sammlung
+            .where('endDate', isGreaterThan: Timestamp.now())
+            .orderBy('endDate', descending: true)
+            .snapshots(),
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -86,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          // Wenn keine Aufträge vorhanden sind
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
               child: Text(
@@ -96,25 +87,17 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          // Liste der Aufträge aus dem Snapshot erstellen
           final auftraege = snapshot.data!.docs.map((doc) {
             return {'id': doc.id, ...doc.data() as Map<String, dynamic>};
           }).toList();
 
-          return ListView.separated(
+          return ListView.builder(
             itemCount: auftraege.length,
-            separatorBuilder: (context, index) => Divider(
-              color: Colors.grey[300],
-              thickness: 1,
-              height: 1,
-            ),
             itemBuilder: (context, index) {
-              // Zugriff auf Teilnehmerdaten
               int currentParticipants =
                   auftraege[index]["currentParticipants"] ?? 0;
               int maxParticipants = auftraege[index]["maxParticipants"] ?? 0;
 
-              // Zugriff auf das Datum, wenn vorhanden
               DateTime? startDate;
               if (auftraege[index]['startDate'] != null) {
                 startDate =
@@ -126,47 +109,76 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, profileImageSnapshot) {
                   if (profileImageSnapshot.connectionState ==
                       ConnectionState.waiting) {
-                    return const CircularProgressIndicator(); // Ladeanzeige, solange das Bild geladen wird
+                    return const Center(child: CircularProgressIndicator());
                   }
 
-                  return ListTile(
-                    leading: profileImageSnapshot.hasData
-                        ? profileImageSnapshot.data!
-                        : const CircleAvatar(
-                            radius: 30,
-                            backgroundImage: AssetImage(
-                                'assets/icons/default.png'), // Standardbild
-                          ),
-                    title: Text(auftraege[index]["name"] ?? 'Kein Name'),
-                    tileColor: const Color.fromARGB(255, 206, 157, 183),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(auftraege[index]["city"] ?? 'Unbekannte Stadt'),
-                        // Anzeige der Teilnehmerzahl
-                        Text(
-                          "$currentParticipants von $maxParticipants Teilnehmern",
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        // Anzeige des Datums, wenn vorhanden
-                        if (startDate != null)
-                          Text(
-                            'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
-                          ),
-                      ],
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    color: const Color.fromARGB(255, 206, 157, 183),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    isThreeLine: true,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AuftragDetailScreen(
-                            auftrag: auftraege[index], // Übergabe des Auftrags
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AuftragDetailScreen(
+                              auftrag: auftraege[index],
+                            ),
                           ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            profileImageSnapshot.hasData
+                                ? profileImageSnapshot.data!
+                                : const CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage:
+                                        AssetImage('assets/icons/default.png'),
+                                  ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    auftraege[index]["name"] ?? 'Kein Name',
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    auftraege[index]["city"] ??
+                                        'Unbekannte Stadt',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "$currentParticipants von $maxParticipants Teilnehmern",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (startDate != null)
+                                    Text(
+                                      'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios, size: 16),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   );
                 },
               );

@@ -7,76 +7,69 @@ import 'package:meetkoch/src/features/auftragsdaten/presentation/AuftragsdatenSc
 class VerlaufScreen extends StatelessWidget {
   const VerlaufScreen({super.key});
 
-  // Funktion zum Abrufen des Profilbildes des Benutzers
   Future<Widget> _getUserProfileImage(String userId) async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    DocumentSnapshot userDoc =
-        await firestore.collection('users').doc(userId).get();
-    String? userImage = userDoc['imageUrl'];
-
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final imageUrl = userDoc['imageUrl'] ?? '';
     return CircleAvatar(
       radius: 30,
-      backgroundImage: userImage != null && userImage.isNotEmpty
-          ? NetworkImage(userImage)
+      backgroundImage: imageUrl.isNotEmpty
+          ? NetworkImage(imageUrl)
           : const AssetImage('assets/icons/default.png') as ImageProvider,
     );
   }
 
-  // Funktion zur Erstellung der Gamification-Icons
   List<Widget> _buildGamificationIcons(int points) {
-    int totalSpoons = points ~/ 10;
-    int totalPans = totalSpoons ~/ 5;
-    int totalFlames = totalPans ~/ 5;
+    int spoons = points ~/ 10 % 5;
+    int pans = (points ~/ 50) % 5;
+    int flames = points ~/ 250;
 
-    totalSpoons %= 5;
-    totalPans %= 5;
-
-    List<Widget> icons = [];
-
-    for (int i = 0; i < totalFlames; i++) {
-      icons.add(const Icon(Icons.local_fire_department,
-          color: Colors.amber, size: 20));
-    }
-
-    for (int i = 0; i < totalPans; i++) {
-      icons.add(const Icon(Icons.kitchen, color: Colors.amber, size: 20));
-    }
-
-    for (int i = 0; i < totalSpoons; i++) {
-      icons.add(const Icon(Icons.soup_kitchen, color: Colors.amber, size: 20));
-    }
-
-    return icons;
+    return [
+      ...List.generate(
+          flames,
+          (_) => const Icon(Icons.local_fire_department,
+              color: Colors.amber, size: 20)),
+      ...List.generate(pans,
+          (_) => const Icon(Icons.kitchen, color: Colors.amber, size: 20)),
+      ...List.generate(spoons,
+          (_) => const Icon(Icons.soup_kitchen, color: Colors.amber, size: 20)),
+    ];
   }
 
-  Future<void> _updateUserPoints(int points) async {
-    User? user = FirebaseAuth.instance.currentUser;
-
+  Future<void> _updateUserPoints(int totalAuftraege) async {
+    final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-    // Aktualisiere die Punktzahl des Benutzers in Firestore
-    await firestore.collection('users').doc(user.uid).update({
-      'points': points,
-    });
+    final points = totalAuftraege * 10;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .update({'points': points});
   }
 
   @override
   Widget build(BuildContext context) {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    User? user = FirebaseAuth.instance.currentUser;
+    final firestore = FirebaseFirestore.instance;
+    final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Verlauf'),
-        ),
+        appBar: AppBar(title: const Text('Verlauf')),
         body: const Center(
-          child: Text('Bitte melde dich an, um deinen Verlauf zu sehen.'),
-        ),
+            child: Text('Bitte melde dich an, um deinen Verlauf zu sehen.')),
       );
     }
+
+    final now = DateTime.now();
+
+    final arbeitgeberStream = firestore
+        .collection('auftraege')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots();
+
+    final freelancerStream = firestore
+        .collection('auftraege')
+        .where('assignedUser', isEqualTo: user.uid)
+        .snapshots();
 
     return Scaffold(
       appBar: AppBar(
@@ -86,206 +79,141 @@ class VerlaufScreen extends StatelessWidget {
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                FutureBuilder<QuerySnapshot>(
-                  future: firestore
-                      .collection('auftraege')
-                      .where('assignedUser', isEqualTo: user.uid)
-                      .get(),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SizedBox.shrink();
-                    }
-
-                    var auftraegeFreelancer = snapshot.data!.docs;
-
-                    // Abfrage für Aufträge des Arbeitgebers
-                    return FutureBuilder<QuerySnapshot>(
-                      future: firestore
-                          .collection('auftraege')
-                          .where('userId', isEqualTo: user.uid)
-                          .get(),
-                      builder: (context, snapshotEmployer) {
-                        if (!snapshotEmployer.hasData) {
-                          return const SizedBox.shrink();
-                        }
-
-                        var auftraegeArbeitgeber = snapshotEmployer.data!.docs;
-
-                        // Gesamtanzahl der Aufträge für die Punkteberechnung
-                        int totalAuftraege = auftraegeFreelancer.length +
-                            auftraegeArbeitgeber.length;
-                        int points = totalAuftraege * 10;
-
-                        // Speichern der Punkte in der Firestore-Datenbank
-                        _updateUserPoints(points);
-
-                        return Row(
-                          children: [
-                            Text('$points Punkte',
-                                style: const TextStyle(color: Colors.white)),
-                            const SizedBox(width: 8.0),
-                            Row(children: _buildGamificationIcons(points)),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      backgroundColor: const Color(0xFF4B2F3E),
-      body: Column(
-        children: [
-          // Flexible Liste der vergangenen Aufträge
-          Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: firestore
-                  .collection('auftraege')
-                  .where('userId', isEqualTo: user.uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                var auftraegeVonArbeitsgeber = snapshot.data!.docs;
-
-                // Abfrage für Freelancer-Aufträge
+              stream: arbeitgeberStream,
+              builder: (context, snapshot1) {
                 return StreamBuilder<QuerySnapshot>(
-                  stream: firestore
-                      .collection('auftraege')
-                      .where('assignedUser', isEqualTo: user.uid)
-                      .snapshots(),
-                  builder: (context, snapshotFreelancer) {
-                    if (!snapshotFreelancer.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                  stream: freelancerStream,
+                  builder: (context, snapshot2) {
+                    if (!snapshot1.hasData || !snapshot2.hasData)
+                      return const SizedBox.shrink();
 
-                    var auftraegeFreelancer = snapshotFreelancer.data!.docs;
-                    var auftraege = [
-                      ...auftraegeVonArbeitsgeber,
-                      ...auftraegeFreelancer,
-                    ];
+                    final total = snapshot1.data!.docs.length +
+                        snapshot2.data!.docs.length;
+                    final points = total * 10;
+                    _updateUserPoints(total);
 
-                    if (auftraege.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          'Kein Verlauf verfügbar',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      itemCount: auftraege.length,
-                      separatorBuilder: (context, index) => Divider(
-                        color: Colors.grey[300],
-                        thickness: 1,
-                        height: 1,
-                      ),
-                      itemBuilder: (context, index) {
-                        var auftrag = auftraege[index];
-
-                        DateTime? startDate;
-                        if (auftrag['startDate'] != null) {
-                          startDate =
-                              (auftrag['startDate'] as Timestamp).toDate();
-                        }
-
-                        return FutureBuilder<Widget>(
-                          future: _getUserProfileImage(auftrag['userId']),
-                          builder: (context, profileImageSnapshot) {
-                            if (profileImageSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
-                            }
-
-                            return ListTile(
-                              leading: profileImageSnapshot.hasData
-                                  ? profileImageSnapshot.data!
-                                  : const CircleAvatar(
-                                      radius: 30,
-                                      backgroundImage: AssetImage(
-                                          'assets/icons/default.png')),
-                              title: Text(auftrag['name'] ?? 'Kein Name'),
-                              tileColor:
-                                  const Color.fromARGB(255, 206, 157, 183),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(auftrag['city'] ?? 'Unbekannte Stadt'),
-                                  if (startDate != null)
-                                    Text(
-                                      'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
-                                    ),
-                                ],
-                              ),
-                              trailing: const Icon(Icons.arrow_forward_ios),
-                              isThreeLine: true,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => AuftragDetailScreen(
-                                      auftrag: auftrag.data()
-                                          as Map<String, dynamic>,
-                                      isPastOrder: true,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
+                    return Row(
+                      children: [
+                        Text('$points Punkte',
+                            style: const TextStyle(color: Colors.white)),
+                        const SizedBox(width: 8.0),
+                        ..._buildGamificationIcons(points),
+                      ],
                     );
                   },
                 );
               },
             ),
           ),
-          // Legende-Bereich
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              padding: const EdgeInsets.all(16.0),
-              margin: const EdgeInsets.all(8.0),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 170, 116, 146),
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Legende:',
-                    style: TextStyle(
-                        color: Color.fromARGB(255, 9, 0, 0),
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8.0),
-                  const Text(
-                    '• 1 Kochlöffel = 10 Punkte\n'
-                    '• 1 Pfanne = 5 Kochlöffel (50 Punkte)\n'
-                    '• 1 Flamme = 5 Pfannen (250 Punkte)\n',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 16, 16, 16),
-                      fontSize: 16,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
+      ),
+      backgroundColor: const Color(0xFF4B2F3E),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: arbeitgeberStream,
+        builder: (context, snapshot1) {
+          return StreamBuilder<QuerySnapshot>(
+            stream: freelancerStream,
+            builder: (context, snapshot2) {
+              if (!snapshot1.hasData || !snapshot2.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final auftraege = [
+                ...snapshot1.data!.docs,
+                ...snapshot2.data!.docs,
+              ].where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final endDate = (data['endDate'] as Timestamp?)?.toDate();
+                return endDate != null && endDate.isBefore(now);
+              }).toList();
+
+              if (auftraege.isEmpty) {
+                return const Center(
+                  child: Text('Keine vergangenen Aufträge',
+                      style: TextStyle(color: Colors.white)),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: auftraege.length,
+                itemBuilder: (context, index) {
+                  final doc = auftraege[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final startDate = (data['startDate'] as Timestamp?)?.toDate();
+
+                  return FutureBuilder<Widget>(
+                    future: _getUserProfileImage(data['userId']),
+                    builder: (context, snapshot) {
+                      final avatar = snapshot.data ??
+                          const CircleAvatar(
+                              radius: 30,
+                              backgroundImage:
+                                  AssetImage('assets/icons/default.png'));
+
+                      return Card(
+                        color: const Color.fromARGB(255, 206, 157, 183),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        child: ListTile(
+                          leading: avatar,
+                          title: Text(data['name'] ?? 'Kein Name'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(data['city'] ?? 'Unbekannte Stadt'),
+                              if (startDate != null)
+                                Text(
+                                  'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                            ],
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AuftragDetailScreen(
+                                  auftrag: data,
+                                  isPastOrder: true,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16.0),
+        color: const Color.fromARGB(255, 170, 116, 146),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Legende:',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black)),
+            SizedBox(height: 8),
+            Text(
+              '• 1 Kochlöffel = 10 Punkte\n'
+              '• 1 Pfanne = 5 Kochlöffel (50 Punkte)\n'
+              '• 1 Flamme = 5 Pfannen (250 Punkte)',
+              style: TextStyle(color: Colors.black87, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

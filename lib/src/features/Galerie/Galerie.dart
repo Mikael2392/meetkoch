@@ -36,7 +36,7 @@ class _GalerieScreenState extends State<GalerieScreen> {
   }
 
   void _showCommentDialog() {
-    final TextEditingController _commentController = TextEditingController();
+    final TextEditingController commentController = TextEditingController();
 
     showDialog(
       context: context,
@@ -47,7 +47,7 @@ class _GalerieScreenState extends State<GalerieScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: _commentController,
+                controller: commentController,
                 decoration: const InputDecoration(
                   hintText: 'Gib einen Kommentar ein...',
                   border: OutlineInputBorder(),
@@ -72,7 +72,7 @@ class _GalerieScreenState extends State<GalerieScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                await _uploadImageWithComment(_commentController.text.trim());
+                await _uploadImageWithComment(commentController.text.trim());
                 Navigator.pop(context);
               },
               child: const Text('Hochladen'),
