@@ -33,7 +33,6 @@ class UserReviewScreen extends StatelessWidget {
   Widget _buildStars(double rating) {
     int fullStars = rating.floor();
     bool halfStar = (rating - fullStars) >= 0.5;
-
     return Row(
       children: [
         for (int i = 0; i < fullStars; i++)
@@ -56,60 +55,52 @@ class UserReviewScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF4B2F3E),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _getUserReviews(),
-        builder: (BuildContext context,
-            AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+        builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError || !snapshot.hasData) {
             return const Center(
-              child: Text(
-                'Keine Bewertungen gefunden.',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          } else {
-            final reviews = snapshot.data!;
-            return ListView.builder(
-              itemCount: reviews.length,
-              itemBuilder: (context, index) {
-                final review = reviews[index];
-                return FutureBuilder<String>(
-                  future: _getUserName(review['reviewedUserId']),
-                  builder: (context, nameSnapshot) {
-                    if (!nameSnapshot.hasData) {
-                      return const ListTile(
-                        title: Text('Lädt...',
-                            style: TextStyle(color: Colors.white)),
-                      );
-                    }
-                    final userName = nameSnapshot.data!;
-                    return Card(
-                      color: const Color(0xFF4B2F3E),
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 5, horizontal: 10),
-                      child: ListTile(
-                        title: Text(
-                          'Bewertet: $userName',
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildStars(review['rating']),
-                            const SizedBox(height: 5),
-                            Text(
-                              review['review'] ?? 'Keine Rezension',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+              child: Text('Keine Bewertungen gefunden.',
+                  style: TextStyle(color: Colors.white)),
             );
           }
+
+          final reviews = snapshot.data!;
+          return ListView.builder(
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return FutureBuilder<String>(
+                future: _getUserName(review['reviewedUserId']),
+                builder: (context, nameSnapshot) {
+                  if (!nameSnapshot.hasData) {
+                    return const ListTile(
+                      title: Text('Lädt...',
+                          style: TextStyle(color: Colors.white)),
+                    );
+                  }
+                  return Card(
+                    color: const Color(0xFF4B2F3E),
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                    child: ListTile(
+                      title: Text('Bewertet: ${nameSnapshot.data!}',
+                          style: const TextStyle(color: Colors.white)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildStars(review['rating'].toDouble()),
+                          const SizedBox(height: 5),
+                          Text(review['review'] ?? 'Keine Rezension',
+                              style: const TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
         },
       ),
     );

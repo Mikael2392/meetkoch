@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/Neuer_Auftrag/presentation/ArbeitsgeberAuftragListe%20.dart';
+// Fix #2/#3: Import ohne Leerzeichen im Dateinamen
+import 'package:meetkoch/src/features/Neuer_Auftrag/presentation/ArbeitsgeberAuftragListe.dart'
+    as employer_auftrag;
 import 'package:meetkoch/src/features/Home/presentation/home_screen.dart';
 import 'package:meetkoch/src/features/Setting/presentation/setting_screen.dart';
-
-import 'package:meetkoch/src/features/auftrag_liste/presentation/auftrag_liste.dart';
+import 'package:meetkoch/src/features/auftrag_liste/presentation/auftrag_liste.dart'
+    as freelancer_auftrag;
 
 class AppHome extends StatefulWidget {
-  final String role; // This will help to decide between freelancer or employer
+  final String role;
 
   const AppHome({super.key, required this.role});
 
@@ -24,24 +26,21 @@ class _AppHomeState extends State<AppHome> {
   void initState() {
     super.initState();
 
-    // Screens for Freelancers
     freelancerScreens = [
       const HomeScreen(),
       const SettingScreen(),
-      const AuftraegeListe(), // Freelancer-specific screen for managing jobs
+      const freelancer_auftrag.AuftraegeListe(),
     ];
 
-    // Screens for Employers
     employerScreens = [
       const HomeScreen(),
       const SettingScreen(),
-      const ArbeitsgeberAuftragListe(), // Employer-specific screen for assigning jobs
+      const employer_auftrag.ArbeitsgeberAuftragListe(),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    // Use different screens based on role
     final List<Widget> screens =
         widget.role == 'freelancer' ? freelancerScreens : employerScreens;
 

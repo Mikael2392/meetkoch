@@ -9,17 +9,18 @@ class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  _EditProfileScreenState createState() => _EditProfileScreenState();
+  State<EditProfileScreen> createState() => EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
-  File? _image;
+// Fix: private -> public
+class EditProfileScreenState extends State<EditProfileScreen> {
+  File? image;
   String? imageUrl;
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _numberController = TextEditingController();
-  bool _isLoading = false; // Ladezustand
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController numberController = TextEditingController();
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -27,23 +28,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _loadProfileData();
   }
 
+  @override
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    emailController.dispose();
+    numberController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadProfileData() async {
     User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
 
+      if (!mounted) return; // Fix: mounted-Check
+
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
-
         setState(() {
-          _firstNameController.text = userData['vorname'] ?? '';
-          _lastNameController.text = userData['nachname'] ?? '';
-          _emailController.text = userData['email'] ?? '';
-          _numberController.text = userData['telefon'] ?? '';
+          firstNameController.text = userData['vorname'] ?? '';
+          lastNameController.text = userData['nachname'] ?? '';
+          emailController.text = userData['email'] ?? '';
+          numberController.text = userData['telefon'] ?? '';
           imageUrl = userData['imageUrl'];
         });
       }
@@ -51,40 +61,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfileData() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => isLoading = true);
 
     User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
-      if (_image != null) {
+      if (image != null) {
         try {
-          FirebaseStorage storage = FirebaseStorage.instance;
-          Reference ref =
-              storage.ref().child('user_images').child('${user.uid}.jpg');
+          final ref = FirebaseStorage.instance
+              .ref()
+              .child('user_images')
+              .child('${user.uid}.jpg');
+          final snapshot = await ref.putFile(image!);
+          final downloadUrl = await snapshot.ref.getDownloadURL();
 
-          UploadTask uploadTask = ref.putFile(_image!);
-
-          TaskSnapshot snapshot = await uploadTask;
-
-          String downloadUrl = await snapshot.ref.getDownloadURL();
-
-          setState(() {
-            imageUrl = downloadUrl;
-          });
+          if (!mounted) return; // Fix: mounted-Check
+          setState(() => imageUrl = downloadUrl);
 
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
               .update({'imageUrl': imageUrl});
         } catch (e) {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Fehler beim Hochladen des Bildes: $e')),
           );
-          setState(() {
-            _isLoading = false;
-          });
+          setState(() => isLoading = false);
           return;
         }
       }
@@ -93,21 +95,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           .collection('users')
           .doc(user.uid)
           .update({
-        'vorname': _firstNameController.text,
-        'nachname': _lastNameController.text,
-        'email': _emailController.text,
-        'telefon': _numberController.text,
+        'vorname': firstNameController.text,
+        'nachname': lastNameController.text,
+        'email': emailController.text,
+        'telefon': numberController.text,
         if (imageUrl != null) 'imageUrl': imageUrl,
       });
 
-      setState(() {
-        _isLoading = false;
-      });
+      if (!mounted) return; // Fix: mounted-Check
+      setState(() => isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Daten erfolgreich gespeichert!')),
       );
-
       Navigator.pop(context, true);
     }
   }
@@ -115,17 +115,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
+      setState(() => image = File(pickedFile.path));
     }
   }
 
   Future<void> _deleteAccount() async {
     User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       try {
         await FirebaseFirestore.instance
@@ -133,11 +129,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             .doc(user.uid)
             .delete();
         await user.delete();
+
+        if (!mounted) return; // Fix: mounted-Check
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Konto erfolgreich gelöscht!')),
         );
         Navigator.pop(context);
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Fehler beim Löschen des Kontos: $e')),
         );
@@ -155,9 +154,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               'Bist du sicher, dass du dein Konto löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Abbrechen'),
             ),
             TextButton(
@@ -177,12 +174,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: Colors.white,
-          ),
-        ),
+        title:
+            const Text('Edit Profile', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4B2F3E),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -191,14 +184,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4B2F3E),
-              Color(0xFFB16F92),
-            ],
+            colors: [Color(0xFF4B2F3E), Color(0xFFB16F92)],
           ),
         ),
         padding: const EdgeInsets.all(16.0),
-        child: _isLoading
+        child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
@@ -206,12 +196,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 40,
-                        backgroundImage: _image != null
-                            ? FileImage(_image!)
+                        backgroundImage: image != null
+                            ? FileImage(image!)
                             : (imageUrl != null
                                 ? NetworkImage(imageUrl!) as ImageProvider
                                 : const AssetImage('assets/icons/default.png')),
-                        child: _image == null && imageUrl == null
+                        child: image == null && imageUrl == null
                             ? const Icon(Icons.person, size: 40)
                             : null,
                       ),
@@ -226,9 +216,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 15),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
+                          children: [
                             Icon(Icons.image, color: Colors.white),
                             SizedBox(width: 10),
                             Text('Bild auswählen',
@@ -241,40 +231,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
-                    controller: _firstNameController,
+                    controller: firstNameController,
                     decoration: const InputDecoration(
-                      labelText: 'Vorname',
-                      filled: true,
-                      fillColor: Color(0xFFD2D4C8),
-                    ),
+                        labelText: 'Vorname',
+                        filled: true,
+                        fillColor: Color(0xFFD2D4C8)),
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
-                    controller: _lastNameController,
+                    controller: lastNameController,
                     decoration: const InputDecoration(
-                      labelText: 'Nachname',
-                      filled: true,
-                      fillColor: Color(0xFFD2D4C8),
-                    ),
+                        labelText: 'Nachname',
+                        filled: true,
+                        fillColor: Color(0xFFD2D4C8)),
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
-                    controller: _emailController,
+                    controller: emailController,
                     readOnly: true,
                     decoration: const InputDecoration(
-                      labelText: 'E-Mail',
-                      filled: true,
-                      fillColor: Color(0xFFD2D4C8),
-                    ),
+                        labelText: 'E-Mail',
+                        filled: true,
+                        fillColor: Color(0xFFD2D4C8)),
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
-                    controller: _numberController,
+                    controller: numberController,
                     decoration: const InputDecoration(
-                      labelText: 'Nummer',
-                      filled: true,
-                      fillColor: Color(0xFFD2D4C8),
-                    ),
+                        labelText: 'Nummer',
+                        filled: true,
+                        fillColor: Color(0xFFD2D4C8)),
                   ),
                   const SizedBox(height: 40),
                   ElevatedButton(
@@ -282,20 +268,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB16F92),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                          borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 50, vertical: 15),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Icon(Icons.save, color: Colors.white),
                         SizedBox(width: 10),
-                        Text(
-                          'Speichern',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
+                        Text('Speichern',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 16)),
                       ],
                     ),
                   ),
@@ -305,20 +289,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB16F92),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                          borderRadius: BorderRadius.circular(20)),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 50, vertical: 15),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Icon(Icons.delete_forever, color: Colors.white),
                         SizedBox(width: 10),
-                        Text(
-                          'Konto löschen',
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
+                        Text('Konto löschen',
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 16)),
                       ],
                     ),
                   ),

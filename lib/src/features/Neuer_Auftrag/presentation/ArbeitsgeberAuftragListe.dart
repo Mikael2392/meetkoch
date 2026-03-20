@@ -24,11 +24,9 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
 
   Future<void> _addAuftrag(Map<String, dynamic> neuerAuftrag) async {
     User? currentUser = _auth.currentUser;
-
     if (currentUser != null) {
       neuerAuftrag['isFromCurrentUser'] = true;
       neuerAuftrag['userId'] = currentUser.uid;
-
       await _firestore.collection('auftraege').add(neuerAuftrag);
       _loadCurrentAuftraege();
     }
@@ -41,7 +39,6 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
 
   Future<void> _loadCurrentAuftraege() async {
     User? currentUser = _auth.currentUser;
-
     if (currentUser != null) {
       final QuerySnapshot snapshot = await _firestore
           .collection('auftraege')
@@ -121,8 +118,8 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
               itemCount: currentAuftraege.length,
               itemBuilder: (context, index) {
                 final auftrag = currentAuftraege[index];
-                final currentParticipants = auftrag["currentParticipants"] ?? 0;
-                final maxParticipants = auftrag["maxParticipants"] ?? 0;
+                final currentParticipants = auftrag['currentParticipants'] ?? 0;
+                final maxParticipants = auftrag['maxParticipants'] ?? 0;
                 DateTime? startDate;
                 if (auftrag['startDate'] != null) {
                   startDate = (auftrag['startDate'] as Timestamp).toDate();
@@ -145,9 +142,7 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                               ConnectionState.waiting) {
                             return const CircularProgressIndicator();
                           }
-                          if (snapshot.hasData) {
-                            return snapshot.data!;
-                          }
+                          if (snapshot.hasData) return snapshot.data!;
                           return const CircleAvatar(
                             radius: 30,
                             backgroundImage:
@@ -156,20 +151,20 @@ class _AuftraegeListeState extends State<ArbeitsgeberAuftragListe> {
                         },
                       ),
                       title: Text(
-                        auftrag["name"] ?? 'Kein Titel',
+                        auftrag['name'] ?? 'Kein Titel',
                         style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 18),
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(auftrag["city"] ?? ''),
+                          Text(auftrag['city'] ?? ''),
                           if (startDate != null)
                             Text(
                                 'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}'),
                           const SizedBox(height: 4),
                           Text(
-                            "$currentParticipants von $maxParticipants Teilnehmern",
+                            '$currentParticipants von $maxParticipants Teilnehmern',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ],

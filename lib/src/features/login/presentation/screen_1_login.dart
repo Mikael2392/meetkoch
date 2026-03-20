@@ -32,24 +32,33 @@ class _MeetKochHomeState extends State<MeetKochHome> {
   String? _errorMessage;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
-
   bool _isLogoAtTop = true;
 
   @override
   void initState() {
     super.initState();
-    // Startet die Animation nach einer kurzen Verzögerung (z. B. 1 Sekunde)
     Future.delayed(const Duration(seconds: 1), () {
-      setState(() {
-        _isLogoAtTop = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLogoAtTop = false;
+        });
+      }
     });
+  }
+
+  // Fix #10: dispose() für Controller
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
       try {
@@ -58,22 +67,17 @@ class _MeetKochHomeState extends State<MeetKochHome> {
           password: _passwordController.text.trim(),
         );
 
-        // Fetch user role from Firestore
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
             .get();
 
         if (userDoc.exists) {
-          // Retrieve the user's role (freelancer or employer)
           String role = userDoc['role'];
-
-          // Navigate to AppHome and pass the role
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) =>
-                  AppHome(role: role), // Pass the role to AppHome
+              builder: (context) => AppHome(role: role),
             ),
           );
         } else {
@@ -87,12 +91,14 @@ class _MeetKochHomeState extends State<MeetKochHome> {
         });
       } catch (e) {
         setState(() {
-          _errorMessage = "Ein unerwarteter Fehler ist aufgetreten.";
+          _errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
         });
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -107,10 +113,7 @@ class _MeetKochHomeState extends State<MeetKochHome> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF4B2F3E),
-                  Color(0xFFB16F92),
-                ],
+                colors: [Color(0xFF4B2F3E), Color(0xFFB16F92)],
               ),
             ),
           ),
@@ -213,10 +216,8 @@ class _MeetKochHomeState extends State<MeetKochHome> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 100.0, vertical: 12.0),
                                   ),
-                                  child: const Text(
-                                    'Anmelden',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
+                                  child: const Text('Anmelden',
+                                      style: TextStyle(color: Colors.black)),
                                 ),
                           const SizedBox(height: 20),
                           TextButton(
@@ -235,7 +236,6 @@ class _MeetKochHomeState extends State<MeetKochHome> {
                                 color: const Color.fromARGB(255, 244, 244, 245)
                                     .withOpacity(0.8),
                                 fontSize: 16,
-                                // decoration: TextDecoration.underline,
                               ),
                             ),
                           ),
@@ -256,10 +256,8 @@ class _MeetKochHomeState extends State<MeetKochHome> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 100.0, vertical: 12.0),
                             ),
-                            child: const Text(
-                              'Registrieren',
-                              style: TextStyle(color: Colors.black),
-                            ),
+                            child: const Text('Registrieren',
+                                style: TextStyle(color: Colors.black)),
                           ),
                         ],
                       ),

@@ -16,7 +16,6 @@ class UserReviewsScreen extends StatelessWidget {
     for (var doc in reviewsSnapshot.docs) {
       Map<String, dynamic> reviewData = doc.data() as Map<String, dynamic>;
 
-      // Namen des Rezensenten abrufen
       final reviewerDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(reviewData['reviewerId'])
@@ -35,14 +34,12 @@ class UserReviewsScreen extends StatelessWidget {
         'reviewerName': reviewerName,
       });
     }
-
     return reviews;
   }
 
   Widget _buildStars(double rating) {
     int fullStars = rating.floor();
     bool halfStar = (rating - fullStars) >= 0.5;
-
     return Row(
       children: [
         for (int i = 0; i < fullStars; i++)
@@ -65,8 +62,7 @@ class UserReviewsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFF4B2F3E),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _getUserReviews(),
-        builder: (BuildContext context,
-            AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
+        builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
@@ -77,39 +73,34 @@ class UserReviewsScreen extends StatelessWidget {
               child: Text('Keine Bewertungen verfügbar.',
                   style: TextStyle(color: Colors.white)),
             );
-          } else {
-            final reviews = snapshot.data!;
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: reviews.length,
-              itemBuilder: (context, index) {
-                final review = reviews[index];
-                return Card(
-                  color: const Color.fromARGB(255, 75, 47, 62),
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    title: _buildStars(review['rating']
-                        .toDouble()), // Visuelle Anzeige der Sterne
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 5),
-                        Text(
-                          'Rezension: ${review['review']}',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          'Rezensiert von: ${review['reviewerName']}',
-                          style: const TextStyle(color: Colors.white60),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
           }
+
+          final reviews = snapshot.data!;
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              final review = reviews[index];
+              return Card(
+                color: const Color.fromARGB(255, 75, 47, 62),
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: ListTile(
+                  title: _buildStars(review['rating'].toDouble()),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 5),
+                      Text('Rezension: ${review['review']}',
+                          style: const TextStyle(color: Colors.white70)),
+                      const SizedBox(height: 5),
+                      Text('Rezensiert von: ${review['reviewerName']}',
+                          style: const TextStyle(color: Colors.white60)),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
         },
       ),
     );

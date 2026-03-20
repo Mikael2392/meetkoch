@@ -30,21 +30,49 @@ class _Screen2RegistrierenArbeitsgeberState
   String? _errorMessage;
   bool _isLoading = false;
 
+  // Fix #4: AGB und Datenschutz als echte State-Variablen
+  bool _agbAccepted = false;
+  bool _datenschutzAccepted = false;
+
+  // Fix #10: dispose() für alle Controller
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _firmaController.dispose();
+    _vornameController.dispose();
+    _nachnameController.dispose();
+    _strasseController.dispose();
+    _plzController.dispose();
+    _landController.dispose();
+    _ustIdNrController.dispose();
+    _telefonController.dispose();
+    super.dispose();
+  }
+
   Future<void> _registerEmployer() async {
+    // Fix #4: Prüfen ob AGB akzeptiert
+    if (!_agbAccepted || !_datenschutzAccepted) {
+      setState(() {
+        _errorMessage = 'Bitte akzeptiere AGB und Datenschutz.';
+      });
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
       try {
-        // Register user
         UserCredential userCredential =
             await _auth.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // Save user info with the role of 'employer'
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -59,20 +87,18 @@ class _Screen2RegistrierenArbeitsgeberState
           'ustIdNr': _ustIdNrController.text.trim(),
           'telefon': _telefonController.text.trim(),
           'userId': userCredential.user!.uid,
-          'role': 'employer', // Assign employer role
+          'role': 'employer',
         });
 
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(' Registrierung erfolgreich!'),
+            content: Text('Registrierung erfolgreich!'),
             backgroundColor: Colors.green,
           ),
         );
 
         await Future.delayed(const Duration(seconds: 2));
 
-        // Navigate to employer  home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MeetKochApp()),
@@ -83,7 +109,7 @@ class _Screen2RegistrierenArbeitsgeberState
         });
       } catch (e) {
         setState(() {
-          _errorMessage = "Ein unerwarteter Fehler ist aufgetreten.";
+          _errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
         });
       } finally {
         setState(() {
@@ -97,24 +123,17 @@ class _Screen2RegistrierenArbeitsgeberState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Registrieren',
-          style: TextStyle(
-              color: Color.fromARGB(255, 254, 254, 254)), // Textfarbe AppBar
-        ),
-        backgroundColor: const Color(0xFF4B2F3E), // Hintergrundfarbe der AppBar
-        iconTheme:
-            const IconThemeData(color: Colors.black), // Farbe der AppBar Icons
+        title: const Text('Registrieren',
+            style: TextStyle(color: Color.fromARGB(255, 254, 254, 254))),
+        backgroundColor: const Color(0xFF4B2F3E),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4B2F3E),
-              Color(0xFFB16F92),
-            ],
+            colors: [Color(0xFF4B2F3E), Color(0xFFB16F92)],
           ),
         ),
         child: ListView(
@@ -167,12 +186,19 @@ class _Screen2RegistrierenArbeitsgeberState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionTitle('Registrierung abschließen'),
-                        _buildSwitchTile('AGB'),
-                        _buildSwitchTile('Datenschutz'),
+                        // Fix #4: Echte Switch-Logik
+                        _buildSwitchTile('AGB', _agbAccepted, (val) {
+                          setState(() => _agbAccepted = val);
+                        }),
+                        _buildSwitchTile('Datenschutz', _datenschutzAccepted,
+                            (val) {
+                          setState(() => _datenschutzAccepted = val);
+                        }),
                         if (_errorMessage != null)
-                          Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.red),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(_errorMessage!,
+                                style: const TextStyle(color: Colors.red)),
                           ),
                         const SizedBox(height: 20),
                         _isLoading
@@ -183,11 +209,8 @@ class _Screen2RegistrierenArbeitsgeberState
                                   backgroundColor:
                                       const Color.fromARGB(255, 203, 173, 89),
                                 ),
-                                child: const Text(
-                                  'Registrieren',
-                                  style: TextStyle(
-                                      color: Color.fromARGB(255, 0, 0, 0)),
-                                ),
+                                child: const Text('Registrieren',
+                                    style: TextStyle(color: Colors.black)),
                               ),
                       ],
                     ),
@@ -213,14 +236,11 @@ class _Screen2RegistrierenArbeitsgeberState
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: Color.fromARGB(255, 41, 50, 45),
-      ),
-    );
+    return Text(title,
+        style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 41, 50, 45)));
   }
 
   Widget _buildTextField(String label,
@@ -231,13 +251,9 @@ class _Screen2RegistrierenArbeitsgeberState
         controller: controller,
         obscureText: isPassword,
         decoration: InputDecoration(
-          border: const OutlineInputBorder(),
-          labelText: label,
-        ),
+            border: const OutlineInputBorder(), labelText: label),
         validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Bitte $label eingeben';
-          }
+          if (value == null || value.isEmpty) return 'Bitte $label eingeben';
           if (label == 'E-Mail' &&
               !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
             return 'Bitte eine gültige E-Mail eingeben';
@@ -255,12 +271,14 @@ class _Screen2RegistrierenArbeitsgeberState
     );
   }
 
-  Widget _buildSwitchTile(String title) {
+  // Fix #4: Switch mit echtem State
+  Widget _buildSwitchTile(
+      String title, bool value, ValueChanged<bool> onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: const TextStyle(fontSize: 16)),
-        Switch(value: true, onChanged: (bool newValue) {}),
+        Switch(value: value, onChanged: onChanged),
       ],
     );
   }

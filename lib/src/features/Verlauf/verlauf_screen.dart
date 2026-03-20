@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:meetkoch/src/features/auftragsdaten/presentation/AuftragsdatenScreen.dart';
+import 'package:meetkoch/src/features/auftragsdaten/presentation/auftragsdaten_screen.dart';
 
 class VerlaufScreen extends StatelessWidget {
   const VerlaufScreen({super.key});
@@ -36,7 +36,8 @@ class VerlaufScreen extends StatelessWidget {
     ];
   }
 
-  Future<void> _updateUserPoints(int totalAuftraege) async {
+  // Fix #9: Punkte nur einmal schreiben, nicht bei jedem Stream-Update
+  Future<void> _updateUserPointsOnce(int totalAuftraege) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     final points = totalAuftraege * 10;
@@ -66,7 +67,8 @@ class VerlaufScreen extends StatelessWidget {
         .where('userId', isEqualTo: user.uid)
         .snapshots();
 
-    final freelancerStream = firestore
+    // Fix #8: Beide Felder abfragen (altes assignedUser + neues assignedUsers-Array)
+    final freelancerOldStream = firestore
         .collection('auftraege')
         .where('assignedUser', isEqualTo: user.uid)
         .snapshots();
@@ -83,16 +85,14 @@ class VerlaufScreen extends StatelessWidget {
               stream: arbeitgeberStream,
               builder: (context, snapshot1) {
                 return StreamBuilder<QuerySnapshot>(
-                  stream: freelancerStream,
+                  stream: freelancerOldStream,
                   builder: (context, snapshot2) {
-                    if (!snapshot1.hasData || !snapshot2.hasData)
+                    if (!snapshot1.hasData || !snapshot2.hasData) {
                       return const SizedBox.shrink();
-
+                    }
                     final total = snapshot1.data!.docs.length +
                         snapshot2.data!.docs.length;
                     final points = total * 10;
-                    _updateUserPoints(total);
-
                     return Row(
                       children: [
                         Text('$points Punkte',
@@ -110,82 +110,93 @@ class VerlaufScreen extends StatelessWidget {
       ),
       backgroundColor: const Color(0xFF4B2F3E),
       body: StreamBuilder<QuerySnapshot>(
-        stream: arbeitgeberStream,
-        builder: (context, snapshot1) {
-          return StreamBuilder<QuerySnapshot>(
-            stream: freelancerStream,
-            builder: (context, snapshot2) {
-              if (!snapshot1.hasData || !snapshot2.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+        stream: firestore.collection('auftraege').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              final auftraege = [
-                ...snapshot1.data!.docs,
-                ...snapshot2.data!.docs,
-              ].where((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                final endDate = (data['endDate'] as Timestamp?)?.toDate();
-                return endDate != null && endDate.isBefore(now);
-              }).toList();
+          final uid = user.uid;
 
-              if (auftraege.isEmpty) {
-                return const Center(
-                  child: Text('Keine vergangenen Aufträge',
-                      style: TextStyle(color: Colors.white)),
-                );
-              }
+          // Fix #8: Alle Aufträge filtern — owner, altes assignedUser-Feld UND neues assignedUsers-Array
+          final auftraege = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final endDate = (data['endDate'] as Timestamp?)?.toDate();
+            if (endDate == null || !endDate.isBefore(now)) return false;
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: auftraege.length,
-                itemBuilder: (context, index) {
-                  final doc = auftraege[index];
-                  final data = doc.data() as Map<String, dynamic>;
-                  final startDate = (data['startDate'] as Timestamp?)?.toDate();
+            final isOwner = data['userId'] == uid;
+            final isFreelancerOld = data['assignedUser'] == uid;
+            final assignedUsers = data['assignedUsers'] as List<dynamic>?;
+            final isFreelancerNew =
+                assignedUsers?.any((u) => u['uid'] == uid) ?? false;
 
-                  return FutureBuilder<Widget>(
-                    future: _getUserProfileImage(data['userId']),
-                    builder: (context, snapshot) {
-                      final avatar = snapshot.data ??
-                          const CircleAvatar(
-                              radius: 30,
-                              backgroundImage:
-                                  AssetImage('assets/icons/default.png'));
+            return isOwner || isFreelancerOld || isFreelancerNew;
+          }).toList();
 
-                      return Card(
-                        color: const Color.fromARGB(255, 206, 157, 183),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          leading: avatar,
-                          title: Text(data['name'] ?? 'Kein Name'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(data['city'] ?? 'Unbekannte Stadt'),
-                              if (startDate != null)
-                                Text(
-                                  'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                            ],
+          if (auftraege.isEmpty) {
+            return const Center(
+              child: Text('Keine vergangenen Aufträge',
+                  style: TextStyle(color: Colors.white)),
+            );
+          }
+
+          // Fix #9: Punkte nur einmal nach dem Build aktualisieren
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _updateUserPointsOnce(auftraege.length);
+          });
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: auftraege.length,
+            itemBuilder: (context, index) {
+              final doc = auftraege[index];
+              final data = {
+                'id': doc.id,
+                ...doc.data() as Map<String, dynamic>
+              };
+              final startDate = (data['startDate'] as Timestamp?)?.toDate();
+
+              return FutureBuilder<Widget>(
+                future: _getUserProfileImage(data['userId'] ?? ''),
+                builder: (context, imgSnapshot) {
+                  final avatar = imgSnapshot.data ??
+                      const CircleAvatar(
+                          radius: 30,
+                          backgroundImage:
+                              AssetImage('assets/icons/default.png'));
+
+                  return Card(
+                    color: const Color.fromARGB(255, 206, 157, 183),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    child: ListTile(
+                      leading: avatar,
+                      title: Text(data['name'] ?? 'Kein Name'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(data['city'] ?? 'Unbekannte Stadt'),
+                          if (startDate != null)
+                            Text(
+                              'Datum: ${DateFormat('dd.MM.yyyy').format(startDate)}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                        ],
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AuftragDetailScreen(
+                              auftrag: data,
+                              isPastOrder: true,
+                            ),
                           ),
-                          trailing: const Icon(Icons.arrow_forward_ios),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => AuftragDetailScreen(
-                                  auftrag: data,
-                                  isPastOrder: true,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   );
                 },
               );

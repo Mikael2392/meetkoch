@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/BewertungenScreen/UserRatingProfileScreen.dart';
-import 'package:meetkoch/src/features/User%20profil/userProfil.dart';
+import 'package:meetkoch/src/features/BewertungenScreen/user_rating_profile_screen.dart';
+import 'package:meetkoch/src/features/User%20profil/user_profil.dart';
 
 class AuftragDetailScreen extends StatefulWidget {
   final Map<String, dynamic> auftrag;
@@ -15,11 +15,12 @@ class AuftragDetailScreen extends StatefulWidget {
   });
 
   @override
-  _AuftragDetailScreenState createState() => _AuftragDetailScreenState();
+  State<AuftragDetailScreen> createState() => AuftragDetailScreenState();
 }
 
-class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
+class AuftragDetailScreenState extends State<AuftragDetailScreen> {
   bool hasAcceptedThisJob = false;
+  bool isAccepting = false;
 
   @override
   void initState() {
@@ -27,109 +28,148 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
     _checkIfUserHasAcceptedThisJob();
   }
 
-  // Überprüfen, ob der Benutzer den Auftrag bereits angenommen hat
   Future<void> _checkIfUserHasAcceptedThisJob() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final User? user = FirebaseAuth.instance.currentUser;
+    final String? auftragId = widget.auftrag['id'];
+    if (user == null || auftragId == null) return;
 
-      final DocumentSnapshot result = await firestore
-          .collection('auftraege')
-          .doc(widget.auftrag['id'])
-          .get();
+    final DocumentSnapshot result = await FirebaseFirestore.instance
+        .collection('auftraege')
+        .doc(auftragId)
+        .get();
 
-      if (result.exists) {
-        Map<String, dynamic> data = result.data() as Map<String, dynamic>;
-        List<dynamic> assignedUsers = data['assignedUsers'] ?? [];
+    if (!mounted) return;
 
-        if (assignedUsers.any((u) => u['uid'] == user.uid)) {
-          setState(() {
-            hasAcceptedThisJob = true;
-          });
-        }
+    if (result.exists) {
+      final data = result.data() as Map<String, dynamic>;
+      final List<dynamic> assignedUsers = data['assignedUsers'] ?? [];
+      if (assignedUsers.any((u) => u['uid'] == user.uid)) {
+        setState(() => hasAcceptedThisJob = true);
       }
     }
   }
 
-  // Auftrag übernehmen
-  Future<void> _updateParticipants(BuildContext context) async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    User? user = FirebaseAuth.instance.currentUser;
+  // Fix: KEIN BuildContext-Parameter — verwendet this.context aus dem State
+  Future<void> _updateParticipants() async {
+    if (isAccepting) return;
+    setState(() => isAccepting = true);
 
-    if (user == null) {
+    final String? auftragId = widget.auftrag['id'];
+    if (auftragId == null) {
+      setState(() => isAccepting = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Du musst eingeloggt sein, um den Auftrag anzunehmen.'),
-        ),
+        const SnackBar(content: Text('Auftrag-ID fehlt. Bitte neu laden.')),
       );
       return;
     }
 
-    final userDoc = await firestore.collection('users').doc(user.uid).get();
-    String displayName = 'Anonymer Benutzer';
+    final firestore = FirebaseFirestore.instance;
+    final User? user = FirebaseAuth.instance.currentUser;
 
+    if (user == null) {
+      setState(() => isAccepting = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Du musst eingeloggt sein, um den Auftrag anzunehmen.')),
+      );
+      return;
+    }
+
+    final latestDoc =
+        await firestore.collection('auftraege').doc(auftragId).get();
+    if (!mounted) return;
+
+    if (latestDoc.exists) {
+      final latestData = latestDoc.data() as Map<String, dynamic>;
+      final List<dynamic> latestAssigned = latestData['assignedUsers'] ?? [];
+      if (latestAssigned.any((u) => u['uid'] == user.uid)) {
+        setState(() {
+          hasAcceptedThisJob = true;
+          isAccepting = false;
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Du hast diesen Auftrag bereits angenommen.')),
+        );
+        return;
+      }
+    }
+
+    final userDoc = await firestore.collection('users').doc(user.uid).get();
+    if (!mounted) return;
+
+    String displayName = 'Anonymer Benutzer';
     if (userDoc.exists) {
       final userData = userDoc.data() as Map<String, dynamic>;
       displayName = '${userData['vorname']} ${userData['nachname']}';
     }
 
-    int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
-    int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
+    final int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
+    final int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
 
     if (currentParticipants < maxParticipants) {
-      currentParticipants++;
-
-      await firestore.collection('auftraege').doc(widget.auftrag['id']).update({
-        'currentParticipants': currentParticipants,
+      await firestore.collection('auftraege').doc(auftragId).update({
+        'currentParticipants': currentParticipants + 1,
         'assignedUsers': FieldValue.arrayUnion([
-          {
-            'uid': user.uid,
-            'displayName': displayName,
-          }
+          {'uid': user.uid, 'displayName': displayName}
         ]),
       });
 
+      if (!mounted) return;
       setState(() {
         hasAcceptedThisJob = true;
+        isAccepting = false;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Auftrag wurde erfolgreich angenommen!'),
-        ),
+        const SnackBar(content: Text('Auftrag wurde erfolgreich angenommen!')),
       );
     } else {
+      setState(() => isAccepting = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Maximale Teilnehmeranzahl wurde erreicht!'),
-        ),
+            content: Text('Maximale Teilnehmeranzahl wurde erreicht!')),
       );
     }
   }
 
+  Future<Widget> _getUserProfileImage(String userId) async {
+    final DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final String? userImage = userDoc['imageUrl'];
+    return CircleAvatar(
+      radius: 30,
+      backgroundImage: userImage != null && userImage.isNotEmpty
+          ? NetworkImage(userImage)
+          : const AssetImage('assets/icons/default.png') as ImageProvider,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
-    int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
-    List<dynamic> participants = widget.auftrag['assignedUsers'] ?? [];
-    String employerId = widget.auftrag['userId'] ?? '';
+    final int currentParticipants = widget.auftrag['currentParticipants'] ?? 0;
+    final int maxParticipants = widget.auftrag['maxParticipants'] ?? 0;
+    final List<dynamic> participants = widget.auftrag['assignedUsers'] ?? [];
+    final String employerId = widget.auftrag['userId'] ?? '';
 
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    bool isEmployer = currentUser?.uid == employerId;
+    final User? currentUser = FirebaseAuth.instance.currentUser;
+    final bool isEmployer = currentUser?.uid == employerId;
 
-    DateTime? startDate = widget.auftrag['startDate'] != null
+    final DateTime? startDate = widget.auftrag['startDate'] != null
         ? (widget.auftrag['startDate'] as Timestamp).toDate()
         : null;
-    DateTime? endDate = widget.auftrag['endDate'] != null
+    final DateTime? endDate = widget.auftrag['endDate'] != null
         ? (widget.auftrag['endDate'] as Timestamp).toDate()
         : null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Auftragsdaten',
-          style: TextStyle(color: Colors.white),
-        ),
+        title:
+            const Text('Auftragsdaten', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4B2F3E),
       ),
       backgroundColor: const Color(0xFF4B2F3E),
@@ -138,7 +178,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Arbeitgebername in Row
             Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF4B2F3E),
@@ -184,8 +223,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Stadt mit Icon
             Row(
               children: [
                 const Icon(Icons.location_city, color: Colors.white, size: 20),
@@ -197,16 +234,11 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
               ],
             ),
             const SizedBox(height: 20),
-
-            // Beschreibung
-            const Text(
-              'Beschreibung:',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            const Text('Beschreibung:',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             const SizedBox(height: 10),
             Container(
               padding: const EdgeInsets.all(10),
@@ -220,8 +252,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Start- und Enddatum
             if (startDate != null)
               Text(
                 'Startdatum: ${startDate.toString().split(' ')[0]}',
@@ -233,19 +263,14 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             const SizedBox(height: 20),
-
-            // Teilnehmeranzeige
             Text(
               'Teilnehmer: $currentParticipants von $maxParticipants',
               style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
             const SizedBox(height: 10),
-
-            // Teilnehmerliste mit Bild und Bewertung
             Wrap(
               spacing: 8.0,
               children: participants.map((participant) {
@@ -294,8 +319,7 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => UserRatingProfileScreen(
-                                userId: participant['uid'],
-                              ),
+                                  userId: participant['uid']),
                             ),
                           );
                         },
@@ -305,34 +329,29 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-
-            // Auftrag übernehmen-Button
             if (!hasAcceptedThisJob &&
                 currentParticipants < maxParticipants &&
                 !widget.isPastOrder)
               ElevatedButton(
-                onPressed: () {
-                  _updateParticipants(context);
-                },
+                // Fix: kein () => _updateParticipants(context) mehr
+                onPressed: isAccepting ? null : _updateParticipants,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 188, 180, 133),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 100.0, vertical: 12.0),
                 ),
-                child: const Text(
-                  'Auftrag übernehmen',
-                  style: TextStyle(color: Colors.black),
-                ),
+                child: isAccepting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Auftrag übernehmen',
+                        style: TextStyle(color: Colors.black)),
               ),
-
-            // Meldung für abgeschlossene Aufträge
             if (widget.isPastOrder)
-              const Text(
-                'Dieser Auftrag ist abgeschlossen.',
-                style: TextStyle(color: Colors.redAccent, fontSize: 16),
-              ),
-
-            // Bewertungsbutton für den Arbeitgeber
+              const Text('Dieser Auftrag ist abgeschlossen.',
+                  style: TextStyle(color: Colors.redAccent, fontSize: 16)),
             if (widget.isPastOrder && !isEmployer)
               IconButton(
                 icon: const Icon(Icons.rate_review, color: Colors.amber),
@@ -340,9 +359,8 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => UserRatingProfileScreen(
-                        userId: employerId,
-                      ),
+                      builder: (context) =>
+                          UserRatingProfileScreen(userId: employerId),
                     ),
                   );
                 },
@@ -350,20 +368,6 @@ class _AuftragDetailScreenState extends State<AuftragDetailScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  // Funktion zum Abrufen des Profilbildes eines Benutzers
-  Future<Widget> _getUserProfileImage(String userId) async {
-    final DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    String? userImage = userDoc['imageUrl'];
-
-    return CircleAvatar(
-      radius: 30,
-      backgroundImage: userImage != null && userImage.isNotEmpty
-          ? NetworkImage(userImage)
-          : const AssetImage('assets/icons/default.png') as ImageProvider,
     );
   }
 }

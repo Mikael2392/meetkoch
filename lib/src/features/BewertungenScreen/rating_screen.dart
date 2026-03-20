@@ -9,12 +9,19 @@ class RatingScreen extends StatefulWidget {
   const RatingScreen({super.key, required this.userId});
 
   @override
-  _RatingScreenState createState() => _RatingScreenState();
+  State<RatingScreen> createState() => RatingScreenState();
 }
 
-class _RatingScreenState extends State<RatingScreen> {
-  double _rating = 0.0;
-  final TextEditingController _reviewController = TextEditingController();
+// Fix: private -> public
+class RatingScreenState extends State<RatingScreen> {
+  double rating = 0.0;
+  final TextEditingController reviewController = TextEditingController();
+
+  @override
+  void dispose() {
+    reviewController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submitRating() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
@@ -23,11 +30,12 @@ class _RatingScreenState extends State<RatingScreen> {
     await FirebaseFirestore.instance.collection('reviews').add({
       'reviewerId': currentUser.uid,
       'reviewedUserId': widget.userId,
-      'rating': _rating,
-      'review': _reviewController.text,
+      'rating': rating,
+      'review': reviewController.text,
       'timestamp': Timestamp.now(),
     });
 
+    if (!mounted) return; // Fix: mounted-Check nach async
     Navigator.pop(context);
   }
 
@@ -54,23 +62,18 @@ class _RatingScreenState extends State<RatingScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            // Sternbewertung hinzufügen
             Center(
               child: RatingBar.builder(
-                initialRating: _rating,
+                initialRating: rating,
                 minRating: 0.5,
                 direction: Axis.horizontal,
                 allowHalfRating: true,
                 itemCount: 5,
                 itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
-                itemBuilder: (context, _) => const Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                ),
-                onRatingUpdate: (rating) {
-                  setState(() {
-                    _rating = rating;
-                  });
+                itemBuilder: (context, _) =>
+                    const Icon(Icons.star, color: Colors.amber),
+                onRatingUpdate: (value) {
+                  setState(() => rating = value);
                 },
               ),
             ),
@@ -85,29 +88,25 @@ class _RatingScreenState extends State<RatingScreen> {
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: _reviewController,
+              controller: reviewController,
               maxLines: 4,
-              style: const TextStyle(
-                  color: Colors.white), // Textfarbe auf weiß setzen
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 hintText: 'Teile deine Erfahrung...',
-                hintStyle: const TextStyle(
-                    color: Colors.white54), // Hint-Text auch in weißer Farbe
+                hintStyle: const TextStyle(color: Colors.white54),
                 filled: true,
-                fillColor: const Color(
-                    0xFF5C3D4F), // Hintergrundeinstellung für Textfeld
+                fillColor: const Color(0xFF5C3D4F),
               ),
             ),
             const SizedBox(height: 30),
-            // Button mittig und visuell ansprechender
             Center(
               child: ElevatedButton(
                 onPressed: _submitRating,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 188, 180, 133),
+                  backgroundColor: const Color.fromARGB(255, 188, 180, 133),
                   padding: const EdgeInsets.symmetric(
                       horizontal: 50.0, vertical: 12.0),
                 ),

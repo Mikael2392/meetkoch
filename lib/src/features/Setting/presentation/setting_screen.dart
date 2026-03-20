@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/BewertungenScreen/UserReviewScreen.dart';
-import 'package:meetkoch/src/features/EditProfileScreen/presentation/EditProfileScreen.dart';
-import 'package:meetkoch/src/features/Galerie/Galerie.dart';
-import 'package:meetkoch/src/features/Verlauf/VerlaufScreen.dart';
+import 'package:meetkoch/src/features/BewertungenScreen/user_review_screen.dart';
+import 'package:meetkoch/src/features/EditProfileScreen/presentation/edit_profile_screen.dart';
+import 'package:meetkoch/src/features/Galerie/galerie.dart';
+import 'package:meetkoch/src/features/Verlauf/verlauf_screen.dart';
 import 'package:meetkoch/src/features/login/presentation/screen_1_login.dart';
 
 class SettingScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class _SettingScreenState extends State<SettingScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserDataFromFirestore(); // Benutzerdaten aus Firestore laden
+    _loadUserDataFromFirestore();
   }
 
   Future<void> _loadUserDataFromFirestore() async {
@@ -38,18 +38,13 @@ class _SettingScreenState extends State<SettingScreen> {
 
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
-
         setState(() {
           _firstName = userData['vorname'] ?? 'Max';
           _lastName = userData['nachname'] ?? 'Mustermann';
           _email = userData['email'] ?? 'max@example.com';
           _number = userData['telefon'] ?? '1234567890';
-          _profileImage = userData['imageUrl']; // Bild-URL laden
+          _profileImage = userData['imageUrl'];
         });
-
-        print("Benutzerdaten erfolgreich geladen.");
-      } else {
-        print("Benutzerdaten nicht gefunden.");
       }
     }
   }
@@ -64,12 +59,13 @@ class _SettingScreenState extends State<SettingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Fix #7: currentUser holen für korrekte userId
+    final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Einstellungen',
-          style: TextStyle(color: Colors.white),
-        ),
+        title:
+            const Text('Einstellungen', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4B2F3E),
       ),
       body: Container(
@@ -77,17 +73,12 @@ class _SettingScreenState extends State<SettingScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4B2F3E),
-              Color(0xFFB16F92),
-            ],
+            colors: [Color(0xFF4B2F3E), Color(0xFFB16F92)],
           ),
         ),
         child: Column(
           children: [
             const SizedBox(height: 16),
-
-            // Profilcontainer
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -103,38 +94,25 @@ class _SettingScreenState extends State<SettingScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '$_firstName $_lastName',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                      Text('$_firstName $_lastName',
+                          style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
                       const SizedBox(height: 4),
-                      Text(
-                        _email,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      Text(_email,
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.white70)),
                       const SizedBox(height: 4),
-                      Text(
-                        _number,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                        ),
-                      ),
+                      Text(_number,
+                          style: const TextStyle(
+                              fontSize: 16, color: Colors.white70)),
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-
-            // Grid Cards
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -142,64 +120,50 @@ class _SettingScreenState extends State<SettingScreen> {
                 mainAxisSpacing: 16,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildCard(
-                    context,
-                    icon: Icons.account_circle,
-                    title: 'Account bearbeiten',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const EditProfileScreen(),
-                        ),
-                      ).then((_) => _loadUserDataFromFirestore());
-                    },
-                  ),
-                  _buildCard(
-                    context,
-                    icon: Icons.photo_library,
-                    title: 'Galerie',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const GalerieScreen(userId: ''),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildCard(
-                    context,
-                    icon: Icons.history,
-                    title: 'Vergangene Aufträge',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const VerlaufScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildCard(
-                    context,
-                    icon: Icons.star,
-                    title: 'Bewertungen',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const UserReviewScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  _buildCard(context,
+                      icon: Icons.account_circle,
+                      title: 'Account bearbeiten', onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditProfileScreen(),
+                      ),
+                    ).then((_) => _loadUserDataFromFirestore());
+                  }),
+                  _buildCard(context,
+                      icon: Icons.photo_library, title: 'Galerie', onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        // Fix #7: echte userId übergeben
+                        builder: (context) =>
+                            GalerieScreen(userId: currentUserId),
+                      ),
+                    );
+                  }),
+                  _buildCard(context,
+                      icon: Icons.history,
+                      title: 'Vergangene Aufträge', onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const VerlaufScreen(),
+                      ),
+                    );
+                  }),
+                  _buildCard(context, icon: Icons.star, title: 'Bewertungen',
+                      onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UserReviewScreen(),
+                      ),
+                    );
+                  }),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-
-            // Abmelden Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: GestureDetector(
@@ -217,30 +181,22 @@ class _SettingScreenState extends State<SettingScreen> {
                     ],
                   ),
                   padding: const EdgeInsets.all(16.0),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.logout,
-                        color: Color(0xFF4B2F3E),
-                      ),
-                      const SizedBox(width: 16),
-                      const Text(
-                        'Abmelden',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4B2F3E),
-                        ),
-                      ),
+                      Icon(Icons.logout, color: Color(0xFF4B2F3E)),
+                      SizedBox(width: 16),
+                      Text('Abmelden',
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF4B2F3E))),
                     ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(
-              height: 20,
-            )
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -271,15 +227,12 @@ class _SettingScreenState extends State<SettingScreen> {
           children: [
             Icon(icon, size: 48, color: const Color(0xFF4B2F3E)),
             const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF4B2F3E),
-              ),
-            ),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF4B2F3E))),
           ],
         ),
       ),

@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:meetkoch/src/features/auftragsdaten/presentation/AuftragsdatenScreen.dart';
+import 'package:meetkoch/src/features/auftragsdaten/presentation/auftragsdaten_screen.dart';
 
 class AuftraegeListe extends StatelessWidget {
   const AuftraegeListe({super.key});
@@ -77,8 +77,9 @@ class AuftraegeListe extends StatelessWidget {
                   final data = doc.data() as Map<String, dynamic>;
                   final endDate =
                       (data['endDate'] as Timestamp?)?.toDate().toUtc();
-                  if (endDate == null || endDate.isBefore(todayMidnightUtc))
+                  if (endDate == null || endDate.isBefore(todayMidnightUtc)) {
                     return false;
+                  }
 
                   final uid = user.uid;
 

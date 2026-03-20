@@ -30,21 +30,49 @@ class _RegistrationScreenFreiberuflerState
   String? _errorMessage;
   bool _isLoading = false;
 
+  // Fix #4: AGB und Datenschutz als echte State-Variablen
+  bool _agbAccepted = false;
+  bool _datenschutzAccepted = false;
+
+  // Fix #10: dispose() für alle Controller
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _firmaController.dispose();
+    _vornameController.dispose();
+    _nachnameController.dispose();
+    _strasseController.dispose();
+    _plzController.dispose();
+    _landController.dispose();
+    _ustIdNrController.dispose();
+    _telefonController.dispose();
+    super.dispose();
+  }
+
   Future<void> _registerFreelancer() async {
+    // Fix #4: Prüfen ob AGB akzeptiert
+    if (!_agbAccepted || !_datenschutzAccepted) {
+      setState(() {
+        _errorMessage = 'Bitte akzeptiere AGB und Datenschutz.';
+      });
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
       try {
-        // Register user
         UserCredential userCredential =
             await _auth.createUserWithEmailAndPassword(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        // Save user info with the role of 'freelancer'
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredential.user!.uid)
@@ -59,10 +87,9 @@ class _RegistrationScreenFreiberuflerState
           'ustIdNr': _ustIdNrController.text.trim(),
           'telefon': _telefonController.text.trim(),
           'userId': userCredential.user!.uid,
-          'role': 'freelancer', // Assign freelancer role
+          'role': 'freelancer',
         });
 
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Freelancer Registrierung erfolgreich!'),
@@ -72,7 +99,6 @@ class _RegistrationScreenFreiberuflerState
 
         await Future.delayed(const Duration(seconds: 2));
 
-        // Navigate to freelancer dashboard or home
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MeetKochApp()),
@@ -83,7 +109,7 @@ class _RegistrationScreenFreiberuflerState
         });
       } catch (e) {
         setState(() {
-          _errorMessage = "Ein unerwarteter Fehler ist aufgetreten.";
+          _errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
         });
       } finally {
         setState(() {
@@ -97,10 +123,8 @@ class _RegistrationScreenFreiberuflerState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Registrieren',
-          style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
-        ),
+        title: const Text('Registrieren',
+            style: TextStyle(color: Color.fromARGB(255, 255, 255, 255))),
         backgroundColor: const Color(0xFF4B2F3E),
         iconTheme: const IconThemeData(color: Colors.black),
       ),
@@ -162,12 +186,19 @@ class _RegistrationScreenFreiberuflerState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionTitle('Registrierung abschließen'),
-                        _buildSwitchTile('AGB'),
-                        _buildSwitchTile('Datenschutz'),
+                        // Fix #4: Echte Switch-Logik
+                        _buildSwitchTile('AGB', _agbAccepted, (val) {
+                          setState(() => _agbAccepted = val);
+                        }),
+                        _buildSwitchTile('Datenschutz', _datenschutzAccepted,
+                            (val) {
+                          setState(() => _datenschutzAccepted = val);
+                        }),
                         if (_errorMessage != null)
-                          Text(
-                            _errorMessage!,
-                            style: const TextStyle(color: Colors.red),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(_errorMessage!,
+                                style: const TextStyle(color: Colors.red)),
                           ),
                         const SizedBox(height: 20),
                         _isLoading
@@ -178,11 +209,8 @@ class _RegistrationScreenFreiberuflerState
                                   backgroundColor:
                                       const Color.fromARGB(255, 203, 173, 89),
                                 ),
-                                child: const Text(
-                                  'Registrieren',
-                                  style: TextStyle(
-                                      color: Color.fromARGB(255, 0, 0, 0)),
-                                ),
+                                child: const Text('Registrieren',
+                                    style: TextStyle(color: Colors.black)),
                               ),
                       ],
                     ),
@@ -208,14 +236,11 @@ class _RegistrationScreenFreiberuflerState
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: Color.fromARGB(255, 41, 50, 45),
-      ),
-    );
+    return Text(title,
+        style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 41, 50, 45)));
   }
 
   Widget _buildTextField(String label,
@@ -226,13 +251,9 @@ class _RegistrationScreenFreiberuflerState
         controller: controller,
         obscureText: isPassword,
         decoration: InputDecoration(
-          border: const OutlineInputBorder(),
-          labelText: label,
-        ),
+            border: const OutlineInputBorder(), labelText: label),
         validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Bitte $label eingeben';
-          }
+          if (value == null || value.isEmpty) return 'Bitte $label eingeben';
           if (label == 'E-Mail' &&
               !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
             return 'Bitte eine gültige E-Mail eingeben';
@@ -250,12 +271,14 @@ class _RegistrationScreenFreiberuflerState
     );
   }
 
-  Widget _buildSwitchTile(String title) {
+  // Fix #4: Switch mit echtem State
+  Widget _buildSwitchTile(
+      String title, bool value, ValueChanged<bool> onChanged) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: const TextStyle(fontSize: 16)),
-        Switch(value: true, onChanged: (bool newValue) {}),
+        Switch(value: value, onChanged: onChanged),
       ],
     );
   }

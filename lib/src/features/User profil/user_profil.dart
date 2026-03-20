@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/BewertungenScreen/UserReviewsScreen.dart';
-import 'package:meetkoch/src/features/User%20profil/GalleryScreen.dart';
+import 'package:meetkoch/src/features/BewertungenScreen/user_reviews_screen.dart';
+import 'package:meetkoch/src/features/User%20profil/gallery_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   final String userId;

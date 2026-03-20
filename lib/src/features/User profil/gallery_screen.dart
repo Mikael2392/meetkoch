@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:meetkoch/src/features/User%20profil/LikeProvider.dart';
+import 'package:meetkoch/src/features/User%20profil/like_provider.dart';
 import 'package:provider/provider.dart';
 
 class GalleryScreen extends StatefulWidget {

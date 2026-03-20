@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart'; // Für die Datumsauswahl und Formatierung
+import 'package:intl/intl.dart';
 
 class NeuerAuftragScreen extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
@@ -27,7 +27,7 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
       TextEditingController();
   int currentParticipants = 0;
   int maxParticipants = 0;
-  String imagePath = "assets/icons/default.png"; // Standardbild
+  String imagePath = 'assets/icons/default.png';
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   DateTime? _startDate;
@@ -38,7 +38,6 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
     super.initState();
     _loadUserData();
     if (widget.auftrag != null) {
-      // Falls ein bestehender Auftrag bearbeitet wird, lade die Werte
       nameController.text = widget.auftrag!['name'] ?? '';
       cityController.text = widget.auftrag!['city'] ?? '';
       descriptionController.text = widget.auftrag!['description'] ?? '';
@@ -47,7 +46,6 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
       imagePath = widget.auftrag!['image'] ?? 'assets/icons/default.png';
       maxParticipantsController.text = maxParticipants.toString();
 
-      // Lade bestehendes Datum, falls vorhanden
       if (widget.auftrag!['startDate'] != null) {
         _startDate = (widget.auftrag!['startDate'] as Timestamp).toDate();
       }
@@ -55,6 +53,16 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
         _endDate = (widget.auftrag!['endDate'] as Timestamp).toDate();
       }
     }
+  }
+
+  // Fix #10: dispose() für alle Controller
+  @override
+  void dispose() {
+    nameController.dispose();
+    cityController.dispose();
+    descriptionController.dispose();
+    maxParticipantsController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -67,7 +75,6 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
 
       if (userDoc.exists) {
         var userData = userDoc.data() as Map<String, dynamic>;
-        // Setze den Benutzernamen im Textfeld
         setState(() {
           nameController.text = userData['firma'] ?? '';
         });
@@ -96,32 +103,52 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
     }
   }
 
-  // Methode zum Speichern des Auftrags inklusive Benutzer-ID und Datum
   Future<void> _saveAuftrag() async {
-    User? currentUser = _auth.currentUser; // Abrufen des aktuellen Benutzers
+    // Fix #11: Validierung vor dem Speichern
+    if (nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte einen Namen eingeben.')),
+      );
+      return;
+    }
+    if (cityController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte eine Stadt eingeben.')),
+      );
+      return;
+    }
 
+    // Fix #11: Sichere Zahl-Validierung für maxParticipants
+    final int? parsedMax = int.tryParse(maxParticipantsController.text.trim());
+    if (parsedMax == null || parsedMax <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Bitte eine gültige Teilnehmerzahl eingeben.')),
+      );
+      return;
+    }
+
+    User? currentUser = _auth.currentUser;
     if (currentUser != null) {
-      // Auftrag speichern mit der aktuellen Benutzer-ID und Datum
       widget.onSave({
-        "name": nameController.text,
-        "city": cityController.text,
-        "description": descriptionController.text,
-        "image": imagePath, // Bildpfad wird übernommen
-        "maxParticipants": int.parse(maxParticipantsController.text),
-        "currentParticipants": currentParticipants,
-        "userId": currentUser.uid, // Benutzer-ID hinzufügen
-        "startDate": _startDate != null
-            ? Timestamp.fromDate(_startDate!)
-            : null, // Startdatum
-        "endDate":
-            _endDate != null ? Timestamp.fromDate(_endDate!) : null, // Enddatum
+        'name': nameController.text,
+        'city': cityController.text,
+        'description': descriptionController.text,
+        'image': imagePath,
+        'maxParticipants': parsedMax,
+        'currentParticipants': currentParticipants,
+        'userId': currentUser.uid,
+        'startDate':
+            _startDate != null ? Timestamp.fromDate(_startDate!) : null,
+        'endDate': _endDate != null ? Timestamp.fromDate(_endDate!) : null,
       });
 
-      // Zurück zur vorherigen Ansicht nach dem Speichern
       Navigator.pop(context);
     } else {
-      // Optional: Fehlerbehandlung, falls kein Benutzer angemeldet ist
-      print("Kein Benutzer angemeldet.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Kein Benutzer angemeldet. Bitte neu einloggen.')),
+      );
     }
   }
 
@@ -129,10 +156,8 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Auftrag erstellen',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Auftrag erstellen',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4B2F3E),
       ),
       backgroundColor: const Color(0xFF4B2F3E),
@@ -143,31 +168,28 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
             FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance
                   .collection('users')
-                  .doc(_auth
-                      .currentUser!.uid) // Die aktuelle Benutzer-ID abrufen
+                  .doc(_auth.currentUser!.uid)
                   .get(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator(); // Ladesymbol anzeigen
+                  return const CircularProgressIndicator();
                 }
                 if (snapshot.hasData) {
-                  var userData = snapshot.data!.data() as Map<String, dynamic>;
+                  var userData =
+                      snapshot.data!.data() as Map<String, dynamic>? ?? {};
                   String? userImage = userData['imageUrl'];
-
                   return CircleAvatar(
                     radius: 30,
                     backgroundImage: userImage != null && userImage.isNotEmpty
                         ? NetworkImage(userImage)
                         : const AssetImage('assets/icons/default.png')
-                            as ImageProvider, // Standardbild
-                  );
-                } else {
-                  return const CircleAvatar(
-                    radius: 30,
-                    backgroundImage:
-                        AssetImage('assets/icons/default.png'), // Standardbild
+                            as ImageProvider,
                   );
                 }
+                return const CircleAvatar(
+                  radius: 30,
+                  backgroundImage: AssetImage('assets/icons/default.png'),
+                );
               },
             ),
             const SizedBox(height: 10),
@@ -225,38 +247,33 @@ class _NeuerAuftragScreenState extends State<NeuerAuftragScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 10),
-            Text(
-              '$currentParticipants von $maxParticipants Teilnehmern',
-              style: const TextStyle(color: Colors.white),
-            ),
+            Text('$currentParticipants von $maxParticipants Teilnehmern',
+                style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _selectDate(
-                        context, true), // Datumsauswahl für Startdatum
+                    onPressed: () => _selectDate(context, true),
                     child: Text(_startDate == null
                         ? 'Startdatum auswählen'
-                        : 'Startdatum: ${DateFormat('dd.MM.yyyy').format(_startDate!)}'),
+                        : 'Start: ${DateFormat('dd.MM.yyyy').format(_startDate!)}'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => _selectDate(
-                        context, false), // Datumsauswahl für Enddatum
+                    onPressed: () => _selectDate(context, false),
                     child: Text(_endDate == null
                         ? 'Enddatum auswählen'
-                        : 'Enddatum: ${DateFormat('dd.MM.yyyy').format(_endDate!)}'),
+                        : 'Ende: ${DateFormat('dd.MM.yyyy').format(_endDate!)}'),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed:
-                  _saveAuftrag, // Methode zum Speichern mit Benutzer-ID und Datum
+              onPressed: _saveAuftrag,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 188, 180, 133),
                 padding: const EdgeInsets.symmetric(
